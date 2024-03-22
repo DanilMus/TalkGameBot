@@ -2,13 +2,12 @@
 import asyncio
 import logging 
 from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 # конфиг
-from config.bot_config import token
+from config.config import token
 
 # обработчики
-from app.handlers.start import register_start
+from app.handlers.database_work import register_database_work
 
 logger = logging.getLogger(__name__)
 async def main():
@@ -20,8 +19,8 @@ async def main():
     logger.info("Logging started work")
 
     # инициализация бота
-    bot = Bot(token= token, parse_mode= types.ParseMode.HTML)
-    dp = Dispatcher(bot, storage= MemoryStorage())
+    bot = Bot(token= token)
+    dp = Dispatcher(bot= bot)
 
     # установка команд
     commands = [
@@ -30,7 +29,7 @@ async def main():
     await bot.set_my_commands(commands)
 
     # включение обработчиков
-    await register_start(dp)
+    await register_database_work(dp)
 
     # начало работы
     await dp.start_polling()
