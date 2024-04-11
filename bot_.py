@@ -1,5 +1,5 @@
-from config.config import token
-from db import DataBase
+from config.bot_config import token
+from app.db import DataBase
 from aiogram import Bot, Dispatcher, types
 
 bot = Bot(token= token)

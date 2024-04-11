@@ -1,0 +1,63 @@
+CREATE DATABASE IF NOT EXISTS talkgamebot_db;
+USE talkgamebot_db;
+
+CREATE TABLE Gamers (
+    id BIGINT PRIMARY KEY,
+    nickname VARCHAR(63)
+);
+
+CREATE TABLE Admins (
+    id BIGINT PRIMARY KEY,
+    nickname VARCHAR(63)
+);
+
+CREATE TABLE Games (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    game_start DATETIME,
+    game_end DATETIME
+);
+
+CREATE TABLE Questions_Actions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_admin BIGINT,
+    questions_or_actions BOOLEAN,
+    category VARCHAR(127),
+    task TEXT,
+    UNIQUE(task),
+    FOREIGN KEY (id_admin) REFERENCES Admins(id)
+);
+
+CREATE TABLE Questions_Actions_From_Gamers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_gamer BIGINT,
+    questions_or_actions BOOLEAN,
+    category VARCHAR(127),
+    task TEXT,
+    FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
+);
+
+CREATE TABLE Answers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_game INT,
+    id_gamer BIGINT,
+    id_question_action INT,
+    id_question_action_from_gamer INT,
+    from_game_or_gamer BOOLEAN,
+    answer_start DATETIME,
+    answer_end DATETIME,
+    score INT,
+    FOREIGN KEY (id_game) REFERENCES Games(id),
+    FOREIGN KEY (id_gamer) REFERENCES Gamers(id),
+    FOREIGN KEY (id_question_action) REFERENCES Questions_Actions(id),
+    FOREIGN KEY (id_question_action_from_gamer) REFERENCES Questions_Actions_From_Gamers(id)
+);
+
+CREATE TABLE Participates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_game INT,
+    id_gamer BIGINT,
+    connection_time DATETIME,
+    disconnection_time DATETIME,
+    FOREIGN KEY (id_game) REFERENCES Games(id),
+    FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
+);
