@@ -5,17 +5,26 @@ from bot import logger
 # Класс для взаимодействия с базой
 class DataBase():
     def __init__(self):
-        # Создаем соединение с базой данных
+        # # Создаем соединение с базой данных
+        # self.connection = mysql.connector.connect(user= bot_config.db_user, 
+        #                                         password= bot_config.db_password,
+        #                                         host= bot_config.db_host,
+        #                                         database=bot_config.db_name)
+        
+        # self.admins = self.Admins(self.connection)
+        # self.questions_actions = self.Questions_Actions(self.connection, self.admins)
+        pass
+    
+    def close(self):
+        self.connection.close()
+    
+    def connect(self):
         self.connection = mysql.connector.connect(user= bot_config.db_user, 
                                                 password= bot_config.db_password,
                                                 host= bot_config.db_host,
                                                 database=bot_config.db_name)
-        
         self.admins = self.Admins(self.connection)
         self.questions_actions = self.Questions_Actions(self.connection, self.admins)
-    
-    def close(self):
-        self.connection.close()
 
     
     class Admins():
@@ -31,7 +40,7 @@ class DataBase():
                     raise Exception("Доступ запрещен. Пользователь не является главным админом.")
 
                 self.cursor.execute(query, data)
-                return self.cursor.fetchone() is not None
+                return self.cursor.fetchall() 
             except mysql.connector.Error as err:
                 logger.error(f"Проблема с подключением к базе: {err}")
                 return None
@@ -47,10 +56,14 @@ class DataBase():
 
                 self.cursor.execute(query, data)
                 self.connection.commit()
+
+                return True
             except mysql.connector.Error as err:
                 logger.error(f"Проблема с подключением к базе: {err}")
+                return False
             except Exception as ex:
-                logger.error(f"Что-то пошло не так: {ex}")\
+                logger.error(f"Что-то пошло не так: {ex}")
+                return False
         
 
         # Метод для проверки существования в таблице
@@ -68,8 +81,8 @@ class DataBase():
                 return None
 
         # Функция для добавления админа
-        def add(self, id_admin, id, nickname):
-            self.w(f"INSERT INTO {self.table_name} (id, nickname) VALUES (%s, %s)", id_admin, (id, nickname))
+        def create(self, id_admin, id, nickname):
+            return self.w(f"INSERT INTO {self.table_name} (id, nickname) VALUES (%s, %s)", id_admin, (id, nickname))
         
         # Функция для чтения всех админов
         def read(self, id_admin):
@@ -77,15 +90,15 @@ class DataBase():
 
         # Функция для обновления информации об админе
         def update(self, id_admin, id, nickname):
-            self.w(f"UPDATE {self.table_name} SET nickname = %s WHERE id = %s", id_admin, (nickname, id))
+            return self.w(f"UPDATE {self.table_name} SET nickname = %s WHERE id = %s", id_admin, (nickname, id))
 
         # Функция для удаления админа
         def delete(self, id_admin, id):
-            self.w(f"DELETE FROM {self.table_name} WHERE id = %s", id_admin, (id,))
+            return self.w(f"DELETE FROM {self.table_name} WHERE id = %s", id_admin, (id,))
         
         # Функция для удаления всех админов
         def delete_all(self, id_admin):
-            self.w(f"DELETE FROM {self.table_name}", id_admin)
+            return self.w(f"DELETE FROM {self.table_name}", id_admin)
 
 
     class Questions_Actions():
@@ -102,7 +115,7 @@ class DataBase():
                     raise Exception("Доступ запрещен. Пользователь не является админом.")
                 
                 self.cursor.execute(query, data)
-                return self.cursor.fetchone() is not None
+                return self.cursor.fetchall() 
             except mysql.connector.Error as err:
                 logger.error(f"Проблема с подключением к базе: {err}")
                 return None
@@ -118,18 +131,19 @@ class DataBase():
 
                 self.cursor.execute(query, data)
                 self.connection.commit()
+                return True
             except mysql.connector.Error as err:
                 logger.error(f"Проблема с подключением к базе: {err}")
-                return None
+                return False
             except Exception as ex:
                 logger.error(f"Что-то пошло не так: {ex}")
-                return None
+                return False
 
 
         # Функция для добавления вопроса/действия
-        def add(self, id_admin, questions_or_actions, category, task):
+        def create(self, id_admin, questions_or_actions, category, task):
             query = f"INSERT INTO {self.table_name} (id_admin, questions_or_actions, category, task) VALUES (%s, %s, %s, %s)"
-            self.w(query, id_admin, (id_admin, questions_or_actions, category, task))
+            return self.w(query, id_admin, (id_admin, questions_or_actions, category, task))
 
         # Функция для чтения всех вопросов/действий
         def read(self, id_admin):
@@ -138,12 +152,12 @@ class DataBase():
         # Функция для обновления вопроса/действия
         def update(self, id_admin, id, questions_or_actions, category, task):
             query = f"UPDATE {self.table_name} SET id_admin = %s, questions_or_actions = %s, category = %s, task = %s WHERE id = %s"
-            self.w(query, id_admin, (id_admin, questions_or_actions, category, task, id))
+            return self.w(query, id_admin, (id_admin, questions_or_actions, category, task, id))
 
         # Функция для удаления вопроса/действия
         def delete(self, id_admin, id):
-            self.w(f"DELETE FROM {self.table_name} WHERE id = %s", id_admin, (id,))
+            return self.w(f"DELETE FROM {self.table_name} WHERE id = %s", id_admin, (id,))
 
         # Функция для удаления всех вопросов/действий
         def delete_all(self, id_admin):
-            self.w(f"DELETE FROM {self.table_name}", id_admin)
+            return self.w(f"DELETE FROM {self.table_name}", id_admin)

@@ -11,14 +11,15 @@ from config.bot_config import token
 from app.handlers import start
 from app.handlers import database_work
 
+
 logger = logging.getLogger(__name__)
 async def main():
     # настройка логирования
     logging.basicConfig(
         level= logging.INFO, 
-        format= "%(asctime)s - %(levelname)s - %(levelname)s - %(message)s"
+        format= "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     )
-    logger.info("Logging started work")
+    logger.info("Логирование начало работу")
 
     # инициализация бота
     bot = Bot(token= token)
@@ -31,13 +32,13 @@ async def main():
     await bot.set_my_commands(commands)
 
     # включение обработчиков
-    dp.include_router(start.router)
     dp.include_router(database_work.router)
+    dp.include_router(start.router)
 
     # начало работы
-    logger.info("Bot started work")
+    logger.info("Бот начал работу")
     await dp.start_polling(bot)
-    logger.info("Bot ended work")
+    logger.info("Бот закончил работу")
 
 if __name__ == "__main__":
     asyncio.run(main())
