@@ -1,24 +1,44 @@
-from aiogram import Dispatcher, types
-from db import DataBase
+# библиотеки
+from aiogram import F, Router
+from aiogram.types import Message, CallbackQuery
+from aiogram.filters import Command
+from aiogram.types import InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.filters.callback_data import CallbackData
+# свои модули
+from app.database import DataBase
 
-# инициализация базы данных
-database = DataBase()
 
-async def on_admins_command(message: types.Message):
-    # получение всех админов
-    admins = database.admins.read_all()
-    # форматирование списка админов для отправки в чат
-    admins_text = "\n".join(f"{admin[0]}: {admin[1]}" for admin in admins)
-    await message.reply(f"Админы:\n{admins_text}")
+# Переменные для оргиназации работы
+router = Router() # маршрутизатор
+db = DataBase() # база данных
 
-async def on_questions_actions_command(message: types.Message):
-    # получение всех вопросов/действий
-    questions_actions = database.questions_actions.read_all()
-    # форматирование списка вопросов/действий для отправки в чат
-    questions_actions_text = "\n".join(f"{qa[0]}: {qa[1]}" for qa in questions_actions)
-    await message.reply(f"Вопросы/Действия:\n{questions_actions_text}")
+# Класс для управления колбэками
+class DataBaseCallbackFactory(CallbackData):
+    table: str
+    action: str
 
-# регистрация обработчиков
-async def register_database_work(dp: Dispatcher):
-    dp.message_handler(commands="admins")(on_admins_command)
-    dp.message_handler(commands="questions_actions")(on_questions_actions_command)
+# обработчик для начала взаимодействия с лабой
+@router.message(Command("db"))
+async def db_handler(message: Message, state: FSMContext):
+    await state.clear()
+
+    buttons = [
+        InlineKeyboardButton("Админы", callback_data= DataBaseCallbackFactory(table= "admins", action= "start"))
+    ]
+    kb = InlineKeyboardBuilder(inline_keyboard = buttons)
+    await message.answer("Выбери с какой таблицей хочешь поработать:", reply_markup= kb)
+
+    
+# обработчик на взаимодействие с таблицей Admins
+@router.callback_query(DataBaseCallbackFactory.filter(F.action == "start"))
+async def admins_handler(callback: CallbackQuery, state: FSMContext):
+    buttons = [
+        InlineKeyboardButton("Добавить", callback_data= DataBaseCallbackFactory(table= "admins", action= "add")),
+        InlineKeyboardButton("Прочитать", callback_data= DataBaseCallbackFactory(table= "admins", action= "read")),
+        InlineKeyboardButton("Обновить", callback_data= DataBaseCallbackFactory(table= "admins", action= "update")),
+        InlineKeyboardButton("Удалить", callback_data= DataBaseCallbackFactory(table= "admins", action= "delete"))
+    ]
+    kb = InlineKeyboardBuilder(inline_keyboard = buttons)
+    await callback.answer("Выбери с какой таблицей хочешь поработать:", reply_markup= kb)

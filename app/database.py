@@ -1,6 +1,8 @@
 import mysql.connector
 from config import bot_config
+from bot import logger
 
+# Класс для взаимодействия с базой
 class DataBase():
     def __init__(self):
         # Создаем соединение с базой данных
@@ -31,7 +33,10 @@ class DataBase():
                 self.cursor.execute(query, data)
                 return self.cursor.fetchone() is not None
             except mysql.connector.Error as err:
-                print(f"Проблема с подключением к базе: {err}")
+                logger.error(f"Проблема с подключением к базе: {err}")
+                return None
+            except Exception as ex:
+                logger.error(f"Что-то пошло не так: {ex}")
                 return None
         
         # Для записи
@@ -43,7 +48,9 @@ class DataBase():
                 self.cursor.execute(query, data)
                 self.connection.commit()
             except mysql.connector.Error as err:
-                print(f"Проблема с подключением к базе: {err}")
+                logger.error(f"Проблема с подключением к базе: {err}")
+            except Exception as ex:
+                logger.error(f"Что-то пошло не так: {ex}")\
         
 
         # Метод для проверки существования в таблице
@@ -54,11 +61,14 @@ class DataBase():
                 self.cursor.execute(query, data)
                 return self.cursor.fetchone() is not None
             except mysql.connector.Error as err:
-                print(f"Проблема с подключением к базе: {err}")
+                logger.error(f"Проблема с подключением к базе: {err}")
+                return None
+            except Exception as ex:
+                logger.error(f"Что-то пошло не так: {ex}")
                 return None
 
         # Функция для добавления админа
-        def create(self, id_admin, id, nickname):
+        def add(self, id_admin, id, nickname):
             self.w(f"INSERT INTO {self.table_name} (id, nickname) VALUES (%s, %s)", id_admin, (id, nickname))
         
         # Функция для чтения всех админов
@@ -94,10 +104,10 @@ class DataBase():
                 self.cursor.execute(query, data)
                 return self.cursor.fetchone() is not None
             except mysql.connector.Error as err:
-                print(f"Проблема с подключением к базе: {err}")
+                logger.error(f"Проблема с подключением к базе: {err}")
                 return None
             except Exception as ex:
-                print(f"Что-то пошло не так: {ex}")
+                logger.error(f"Что-то пошло не так: {ex}")
                 return None
         
         # Для записи
@@ -109,15 +119,15 @@ class DataBase():
                 self.cursor.execute(query, data)
                 self.connection.commit()
             except mysql.connector.Error as err:
-                print(f"Проблема с подключением к базе: {err}")
+                logger.error(f"Проблема с подключением к базе: {err}")
                 return None
             except Exception as ex:
-                print(f"Что-то пошло не так: {ex}")
+                logger.error(f"Что-то пошло не так: {ex}")
                 return None
 
 
         # Функция для добавления вопроса/действия
-        def create(self, id_admin, questions_or_actions, category, task):
+        def add(self, id_admin, questions_or_actions, category, task):
             query = f"INSERT INTO {self.table_name} (id_admin, questions_or_actions, category, task) VALUES (%s, %s, %s, %s)"
             self.w(query, id_admin, (id_admin, questions_or_actions, category, task))
 

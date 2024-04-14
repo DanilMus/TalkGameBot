@@ -9,6 +9,7 @@ from config.bot_config import token
 
 # обработчики
 from app.handlers import start
+from app.handlers import database_work
 
 logger = logging.getLogger(__name__)
 async def main():
@@ -31,6 +32,7 @@ async def main():
 
     # включение обработчиков
     dp.include_router(start.router)
+    dp.include_router(database_work.router)
 
     # начало работы
     logger.info("Bot started work")
