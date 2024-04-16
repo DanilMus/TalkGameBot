@@ -11,7 +11,6 @@ from config.bot_config import token
 from app.handlers import start
 from app.handlers import database_work
 
-
 logger = logging.getLogger(__name__)
 async def main():
     # настройка логирования

@@ -4,10 +4,10 @@ from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 # общение с пользователем
-from app.start_dialog import Dialog
+from app.dialog import Dialog
 
 router = Router() # маршрутизатор
-dialog = Dialog() # класс с диалогами
+dialog = Dialog(Dialog.start) # класс с диалогами
 
 # обработчик на команду start
 @router.message(Command("start"))

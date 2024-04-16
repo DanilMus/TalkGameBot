@@ -7,14 +7,18 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.state import State, StatesGroup
 
+import logging
+
 # свои модули
-from bot import logger
+from app.dialog import Dialog
 from app.database import DataBase
 
 
 # Переменные для оргиназации работы
+logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
 db = DataBase() # база данных
+dialog = Dialog(Dialog.database_work) # текст программы
 
 # Класс для управления колбэками
 class DataBaseCallbackFactory(CallbackData, prefix= "db"):
@@ -35,59 +39,60 @@ async def db_handler(message: Message):
     db.connect()
 
     kb = InlineKeyboardBuilder()
-    kb.button(text= "Админы", callback_data= DataBaseCallbackFactory(table= "admins", action= "start"))
+    kb.button(text= "Админы", callback_data= DataBaseCallbackFactory(table= "Admins", action= "start"))
     kb.button(text= "Закрыть базу", callback_data= DataBaseCallbackFactory(table= "all", action= "end"))
 
-    await message.answer("Выбери с какой таблицей хочешь поработать:", reply_markup= kb.as_markup())
+    await message.answer(dialog.take("what_table"), reply_markup= kb.as_markup())
 
-@router.callback_query(DataBaseCallbackFactory.filter(F.admins == "all" and F.action == "begin"))
+@router.callback_query(DataBaseCallbackFactory.filter(F.table == "all" and F.action == "begin"))
 async def db_handler2(callback: CallbackQuery):
     kb = InlineKeyboardBuilder()
-    kb.button(text= "Админы", callback_data= DataBaseCallbackFactory(table= "admins", action= "start"))
+    kb.button(text= "Админы", callback_data= DataBaseCallbackFactory(table= "Admins", action= "start"))
     kb.button(text= "Закрыть базу", callback_data= DataBaseCallbackFactory(table= "all", action= "end"))
 
-    await callback.message.edit_text("Выбери с какой таблицей хочешь поработать:", reply_markup= kb.as_markup())
+    await callback.message.edit_text(dialog.take("what_table"), reply_markup= kb.as_markup())
 
 # Обработчик для закрытия базы
-@router.callback_query(DataBaseCallbackFactory.filter(F.admins == "all" and F.action == "end"))
+@router.callback_query(DataBaseCallbackFactory.filter(F.table == "all" and F.action == "end"))
 async def admins_handler(callback: CallbackQuery):
     db.close()
-    await callback.message.edit_text("База закрыта")
+    await callback.message.edit_text(dialog.take("base_close"))
     
     
 # Обработчик для предоставления команд на взаимодействие с таблицей Admins
-@router.callback_query(DataBaseCallbackFactory.filter(F.admins == "admins" and F.action == "start"))
-async def admins_handler(callback: CallbackQuery):
+@router.callback_query(DataBaseCallbackFactory.filter(F.action == "start"))
+async def admins_handler(callback: CallbackQuery, callback_data: DataBaseCallbackFactory):
+    table = callback_data.table
     kb = InlineKeyboardBuilder()
-    kb.button(text= "Добавить", callback_data= DataBaseCallbackFactory(table= "admins", action= "create"))
-    kb.button(text= "Прочитать", callback_data= DataBaseCallbackFactory(table= "admins", action= "read"))
-    kb.button(text= "Обновить", callback_data= DataBaseCallbackFactory(table= "admins", action= "update"))
-    kb.button(text= "Удалить", callback_data= DataBaseCallbackFactory(table= "admins", action= "delete"))
+    kb.button(text= "Добавить", callback_data= DataBaseCallbackFactory(table=table, action= "create"))
+    kb.button(text= "Прочитать", callback_data= DataBaseCallbackFactory(table=table, action= "read"))
+    kb.button(text= "Обновить", callback_data= DataBaseCallbackFactory(table=table, action= "update"))
+    kb.button(text= "Удалить", callback_data= DataBaseCallbackFactory(table=table, action= "delete"))
     kb.button(text= "Назад", callback_data= DataBaseCallbackFactory(table= "all", action= "begin"))
     kb.adjust(4)
     
-    
-    await callback.message.edit_text("Выбери с какой таблицей хочешь поработать:", reply_markup= kb.as_markup())
+    await callback.message.edit_text(dialog.take("what_action") % table, reply_markup= kb.as_markup())
+
 
 
 # 
 # Далее идет CRUD на Admins
 # 
 # Обработчик на чтение Admins
-@router.callback_query(DataBaseCallbackFactory.filter(F.admins == "admins" and F.action == "read"))
+@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins" and F.action == "read"))
 async def read_admin_handler(callback: CallbackQuery):
     admins = db.admins.read(callback.from_user.id)
 
     if not admins:
-        return callback.message.answer("База пуста")
+        return callback.message.answer(dialog.take("base_empty"))
 
-    response = '\n'.join([f'ID: {admin[0]}    nickname: {admin[1]}' for admin in admins])
+    response = '\n'.join([dialog.take("admin_read") % (admin[0], admin [1]) for admin in admins])
     await callback.message.answer(response)
 
 # Обработчик для подготовки к добавлению в Admins
-@router.callback_query(DataBaseCallbackFactory.filter(F.admins == "admins" and F.action == "create"))
+@router.callback_query(DataBaseCallbackFactory.filter(F.admins == "Admins" and F.action == "create"))
 async def prepare_create_admin_handler(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Укажи ID и nickname.\nПример: 1 Ivan")
+    await callback.message.answer(dialog.take("admin_example"))
     await state.set_state(DataBaseStates.Admins.choosing_create)
 
 # Обработчик на добавление в Admins
@@ -96,14 +101,14 @@ async def prepare_create_admin_handler(message: Message, state: FSMContext):
     id, nickname = message.text.split()
 
     if db.admins.create(message.from_user.id, id, nickname):
-        await message.answer("Админ успешно добавлен")
+        await message.answer(dialog.take("admin_created"))
     else:
-        await message.answer("Произошла какая-то ошибка")
+        await message.answer(dialog.take("error"))
 
 # Обработчик для подготовки к обновлению в Admins
-@router.callback_query(DataBaseCallbackFactory.filter(F.admins == "admins" and F.action == "update"))
+@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins" and F.action == "update"))
 async def prepare_update_admin_handler(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Укажи ID и новый Nickname \nПример: 1 Ivan")
+    await callback.message.answer(dialog.take("admin_example"))
     await state.set_state(DataBaseStates.Admins.choosing_update)
 
 # Обработчик на обновление в Admins
@@ -112,14 +117,14 @@ async def prepare_update_admin_handler(message: Message, state: FSMContext):
     id, nickname = message.text.split()
 
     if db.admins.update(message.from_user.id, id, nickname):
-        await message.answer("Админ успешно изменен")
+        await message.answer(dialog.take("admin_updated"))
     else:
-        await message.answer("Произошла какая-то ошибка")
+        await message.answer(dialog.take("error"))
 
 # Обработчик для подготовки к обновлению в Admins
-@router.callback_query(DataBaseCallbackFactory.filter(F.admins == "admins" and F.action == "delete"))
+@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins" and F.action == "delete"))
 async def prepare_delete_admin_handler(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Укажи ID. \nПример: 1")
+    await callback.message.answer(dialog.take("example_toDel"))
     await state.set_state(DataBaseStates.Admins.choosing_delete)
 
 # Обработчик на обновление в Admins
@@ -128,6 +133,6 @@ async def prepare_delete_admin_handler(message: Message, state: FSMContext):
     id, = message.text.split()
 
     if db.admins.delete(message.from_user.id, id):
-        await message.answer("Админ успешно удален")
+        await message.answer(dialog.take("admin_deleted"))
     else:
-        await message.answer("Произошла какая-то ошибка")
+        await message.answer(dialog.take("error"))
