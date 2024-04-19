@@ -1,5 +1,6 @@
 CREATE DATABASE IF NOT EXISTS talkgamebot_db;
 USE talkgamebot_db;
+ALTER DATABASE talkgamebot_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE Gamers (
     id BIGINT PRIMARY KEY,
@@ -61,3 +62,9 @@ CREATE TABLE Participates (
     FOREIGN KEY (id_game) REFERENCES Games(id),
     FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
 );
+
+
+ALTER TABLE Questions_Actions CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE Questions_Actions_From_Gamers CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE Gamers CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE Admins CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
