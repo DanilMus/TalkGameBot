@@ -13,7 +13,7 @@ CREATE TABLE Admins (
 );
 
 CREATE TABLE Games (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT PRIMARY KEY,
     game_start DATETIME,
     game_end DATETIME
 );
@@ -31,8 +31,6 @@ CREATE TABLE Questions_Actions (
 CREATE TABLE Questions_Actions_From_Gamers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_gamer BIGINT,
-    questions_or_actions BOOLEAN,
-    category VARCHAR(127),
     task TEXT,
     FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
 );

@@ -16,20 +16,32 @@ class Dialog():
         "no_rules": ["У вас нет нужных прав для выполнения этой команды"],
     }
     class database_handlers():
-        admins = {
+        common = {
             "error": ["Произошла какая-то ошибка"],
             "base_empty": ["База пуста"],
             "example_toDel": ["Укажи ID. \nПример: 1"],
+        }
+
+        gamers = {
+            "read": ["ID: <code>%s</code> \tnickname: %s"],
+        }
+        gamers.update(common)
+
+        admins = {
             "example": ["Укажи ID и nickname.\nПример: 1 Ivan"],
             "created": ["Админ успешно добавлен"],
             "read": ["ID: <code>%s</code> \tnickname: %s"],
             "updated": ["Админ успешно изменен"],
             "deleted": ["Админ успешно удален"],
         }
+        admins.update(common)
+
+        games = {
+            "read": ["ID: <code>%s</code>  game_start: %s game_end:"],
+        }
+        games.update(common)
+
         questions_actions = {
-            "error": ["Произошла какая-то ошибка"],
-            "base_empty": ["База пуста"],
-            "example_toDel": ["Укажи ID. \nПример: 1"],
             "example": ["Укажи вопрос или действие (0, 1) ли это, категорию и само задание.\n\nПример: 0_философия_В чем смысл жизни? ИЛИ 1_смартфон_Покажи последнее фото"],
             "example_toUpdate": ["Укажи ID, вопрос или действие (0, 1) ли это, категорию и само задание.\n\nПример: 1234_0_философия_В чем смысл жизни? ИЛИ 1234_1_смартфон_Покажи последнее фото"],
             "created": ["Задание успешно добавлено"],
@@ -37,11 +49,24 @@ class Dialog():
             "updated": ["Задание успешно изменено"],
             "deleted": ["Задание успешно удалено"],
         }
-        gamers = {
-            "error": ["Произошла какая-то ошибка"],
-            "base_empty": ["База пуста"],
-            "read": ["ID: <code>%s</code> \tnickname: %s"],
+        questions_actions.update(common)
+
+        questions_actions_from_gamers = {
+            "read": ["ID: <code>%s</code>  ID_gamer: <code>%s</code>  \ntask: %s\n"],
         }
+        questions_actions_from_gamers.update(common)
+        
+        answers = {
+            "read": ["ID: <code>%s</code>  ID_game: <code>%s</code>  ID_gamer: <code>%s</code> \nID_question_action: <code>%s</code> \nfrom_game_or_gamer: %s \nanswer_start: %s answer_end: %s score: %s\n"],
+        }
+        answers.update(common)
+
+        participates = {
+            "read": ["ID: <code>%s</code>  ID_game: <code>%s</code>  ID_gamer: <code>%s</code> \nconnection_time: %s disconnection_time: %s\n"],
+        }
+        participates.update(common)
+
+
 
     def __init__(self, dialog: dict):
         self.dialog = dialog
