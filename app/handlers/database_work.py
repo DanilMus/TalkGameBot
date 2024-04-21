@@ -15,7 +15,7 @@ import logging
 from app.dialog import Dialog
 from app.database import db
 from app.callbacks import DataBaseCallbackFactory
-from app.handlers.database_hadlers import gamers, admins, games, questions_actions, questions_actions_from_gamers
+from app.handlers.database_hadlers import gamers, admins, games, questions_actions, questions_actions_from_gamers, answers, participates
 from config import bot_config
 
 
@@ -29,6 +29,8 @@ router.include_router(admins.router)
 router.include_router(games.router)
 router.include_router(questions_actions.router)
 router.include_router(questions_actions_from_gamers.router)
+router.include_router(answers.router)
+router.include_router(participates.router)
 
 
 # Клавиатура для обработчиков db_handler и db_handler2
@@ -39,6 +41,8 @@ def kb_for_db_handler() -> InlineKeyboardBuilder:
     kb.button(text= "Игры", callback_data= DataBaseCallbackFactory(table= "Games", action= "start"))
     kb.button(text= "Вопросы и Действия", callback_data= DataBaseCallbackFactory(table= "Questions_Actions", action= "start"))
     kb.button(text= "Вопросы и Действия от игроков", callback_data= DataBaseCallbackFactory(table= "Questions_Actions_From_Gamers", action= "start"))
+    kb.button(text= "Ответы", callback_data= DataBaseCallbackFactory(table= "Answers", action= "start"))
+    kb.button(text= "Участники", callback_data= DataBaseCallbackFactory(table= "Participates", action= "start"))
     kb.button(text= "Закрыть базу", callback_data= DataBaseCallbackFactory(table= "all", action= "end"))
     kb.adjust(2)
 
