@@ -154,6 +154,21 @@ class DataBase():
             query = f"UPDATE {self.table_name} SET id_admin = %s, questions_or_actions = %s, category = %s, task = %s WHERE id = %s"
             return self.w(query, (id_admin, questions_or_actions, category, task, id))
         
+        # Фунция для взятие количества мин строк по вопросам или действиям, для подсчета кол-ва раундов, которые может провести игра
+        def rounds(self, count_members: int):
+            query_false = self.r(f"SELECT COUNT(*) FROM {self.table_name} WHERE questions_or_actions = false")[0][0]
+            query_true = self.r(f"SELECT COUNT(*) FROM {self.table_name} WHERE questions_or_actions = true")[0][0]
+            return int(min(query_false, query_true) / count_members)
+        
+        # Функция для взятия вопросов и действий
+        def questions_actions(self):
+            query_false = self.r(f"SELECT task FROM {self.table_name} WHERE questions_or_actions = false")
+            query_true = self.r(f"SELECT task FROM {self.table_name} WHERE questions_or_actions = true")
+            
+            query_false = [elem[0] for elem in query_false]
+            query_true = [elem[0] for elem in query_true]
+
+            return {"question": query_false, "action": query_true}
     
     # Класс для взаимодействия с таблицей Questions_Actions_From_Gamers
     class _Questions_Actions_From_Gamers(__Base):

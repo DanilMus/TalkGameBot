@@ -3,12 +3,20 @@ from aiogram import F, Router
 from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+
+import logging
+
 # Общение с пользователем
 from app.dialog import Dialog
 from app.database import db
 
+
+# Переменные для оргиназации работы
+logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
 dialog = Dialog(Dialog.start) # класс с диалогами
+
+
 
 # Обработчик на команду start
 @router.message(Command("start"))

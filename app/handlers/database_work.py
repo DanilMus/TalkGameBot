@@ -50,7 +50,8 @@ def kb_for_db_handler() -> InlineKeyboardBuilder:
 
 # Обработчик для начала взаимодействия с базой
 @router.message(Command("db"))
-async def db_handler(message: Message):
+async def db_handler(message: Message, state: FSMContext):
+    await state.clear()
     db.connect()
 
     if not db.admins.is_exists(message.from_user.id):
@@ -60,14 +61,16 @@ async def db_handler(message: Message):
 
 # Обработчик при нажатии кнопки "Назад"
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "all" and F.action == "begin"))
-async def db_handler2(callback: CallbackQuery):
+async def db_handler2(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
     await callback.message.edit_text(dialog.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
 
 
 
 # Обработчик для закрытия базы
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "all" and F.action == "end"))
-async def admins_handler(callback: CallbackQuery):
+async def admins_handler(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
     db.close()
     await callback.message.edit_text(dialog.take("base_close"))
     
@@ -76,7 +79,8 @@ async def admins_handler(callback: CallbackQuery):
 
 # Обработчик для предоставления команд на взаимодействие с таблицами
 @router.callback_query(DataBaseCallbackFactory.filter(F.action == "start"))
-async def admins_handler(callback: CallbackQuery, callback_data: DataBaseCallbackFactory):
+async def admins_handler(callback: CallbackQuery, callback_data: DataBaseCallbackFactory, state: FSMContext):
+    await state.clear()
     table = callback_data.table
 
     if table == "Admins" and bot_config.creator != callback.from_user.id:

@@ -56,7 +56,7 @@ async def prepare_create_admin_handler(callback: CallbackQuery, state: FSMContex
 async def prepare_create_admin_handler(message: Message, state: FSMContext):
     question_or_action, category, task = message.text.split("_")
 
-    if db.questions_actions.create(message.from_user.id, bool(question_or_action), category, task):
+    if db.questions_actions.create(message.from_user.id, bool(int(question_or_action)), category, task):
         await message.answer(dialog.take("created"))
     else:
         await message.answer(dialog.take("error"))
@@ -74,7 +74,7 @@ async def prepare_update_admin_handler(callback: CallbackQuery, state: FSMContex
 async def prepare_update_admin_handler(message: Message, state: FSMContext):
     id, question_or_action, category, task = message.text.split("_")
 
-    if db.questions_actions.update(message.from_user.id, id, bool(question_or_action), category, task):
+    if db.questions_actions.update(message.from_user.id, id, bool(int(question_or_action)), category, task):
         await message.answer(dialog.take("updated"))
     else:
         await message.answer(dialog.take("error"))
