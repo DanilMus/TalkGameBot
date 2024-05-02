@@ -1,5 +1,5 @@
 # 
-# |CRUD на Answers|
+# |Read на Answers|
 # 
 
 
@@ -22,10 +22,15 @@ router = Router() # маршрутизатор
 dialog = Dialog(Dialog.database_handlers.answers) # текст программы
 
 
+
+# 
+# | Read |
+# 
+
 # Обработчик на чтение Answers
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Answers"), DataBaseCallbackFactory.filter(F.action == "read"))
 async def read_Answers_handler(callback: CallbackQuery):
-    answers = db.answers.read()
+    answers = await db.answers.read()
 
     if not answers:
         return await callback.message.answer(dialog.take("base_empty"))

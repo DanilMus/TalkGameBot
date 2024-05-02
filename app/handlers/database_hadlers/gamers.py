@@ -1,5 +1,5 @@
 # 
-# |CRUD на Gamers|
+# |Read на Gamers|
 # 
 
 
@@ -22,12 +22,16 @@ router = Router() # маршрутизатор
 dialog = Dialog(Dialog.database_handlers.gamers) # текст программы
 
 
+# 
+# | Read |
+# 
+
 # Обработчик на чтение Gamers
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Gamers"), DataBaseCallbackFactory.filter(F.action == "read"))
 async def read_gamers_handler(callback: CallbackQuery):
-    gamers = db.gamers.read()
+    gamers = await db.gamers.read()
 
-    if not gamers:
+    if not gamers: # Проверка на пустоту
         return await callback.message.answer(dialog.take("base_empty"))
 
     response = '\n'.join([dialog.take("read") % gamer for gamer in gamers])

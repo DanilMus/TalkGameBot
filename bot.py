@@ -7,12 +7,12 @@ from aiogram.fsm.strategy import FSMStrategy
 from aiogram.fsm.storage.memory import MemoryStorage # где хранятся состояния
 
 # Конфиг
-from config.bot_config import token
+from config.config import token
 
 # Обработчики
 from app.handlers import start
 from app.handlers import database_work
-from app.handlers import game
+from app.handlers import game_
 
 logger = logging.getLogger(__name__)
 async def main():
@@ -36,7 +36,7 @@ async def main():
     
     # Включение обработчиков
     dp.include_router(database_work.router)
-    dp.include_router(game.router)
+    dp.include_router(game_.router)
     dp.include_router(start.router)
 
     # Начало работы

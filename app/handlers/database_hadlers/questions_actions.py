@@ -32,18 +32,9 @@ class Questions_ActionsStates(StatesGroup):
 
 
 
-# Обработчик на чтение Questions_Actions
-@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Questions_Actions"), DataBaseCallbackFactory.filter(F.action == "read"))
-async def read_question_action_handler(callback: CallbackQuery):
-    questions_actions = db.questions_actions.read()
-
-    if not questions_actions:
-        return await callback.message.answer(dialog.take("base_empty"))
-
-    response = '\n'.join([dialog.take("read") % question_action for question_action in questions_actions])
-    await callback.message.answer(response)
-
-
+#
+# | Create | 
+#
 
 # Обработчик для подготовки к добавлению в Questions_Actions
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Questions_Actions"), DataBaseCallbackFactory.filter(F.action == "create"))
@@ -56,12 +47,33 @@ async def prepare_create_admin_handler(callback: CallbackQuery, state: FSMContex
 async def prepare_create_admin_handler(message: Message, state: FSMContext):
     question_or_action, category, task = message.text.split("_")
 
-    if db.questions_actions.create(message.from_user.id, bool(int(question_or_action)), category, task):
+    if await db.questions_actions.create(message.from_user.id, bool(int(question_or_action)), category, task): # Проверка на выполение запроса
         await message.answer(dialog.take("created"))
     else:
         await message.answer(dialog.take("error"))
 
 
+
+# 
+# | Read |
+# 
+
+# Обработчик на чтение Questions_Actions
+@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Questions_Actions"), DataBaseCallbackFactory.filter(F.action == "read"))
+async def read_question_action_handler(callback: CallbackQuery):
+    questions_actions = await db.questions_actions.read()
+
+    if not questions_actions: # Проверка на пустоту и выполнения запроса
+        return await callback.message.answer(dialog.take("base_empty"))
+
+    response = '\n'.join([dialog.take("read") % question_action for question_action in questions_actions])
+    await callback.message.answer(response)
+
+
+
+# 
+# | Update |
+# 
 
 # Обработчик для подготовки к обновлению в Questions_Actions
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Questions_Actions"), DataBaseCallbackFactory.filter(F.action == "update"))
@@ -74,12 +86,17 @@ async def prepare_update_admin_handler(callback: CallbackQuery, state: FSMContex
 async def prepare_update_admin_handler(message: Message, state: FSMContext):
     id, question_or_action, category, task = message.text.split("_")
 
-    if db.questions_actions.update(message.from_user.id, id, bool(int(question_or_action)), category, task):
+    if await db.questions_actions.update(message.from_user.id, id, bool(int(question_or_action)), category, task): # Проверка на выполнения запроса
         await message.answer(dialog.take("updated"))
     else:
         await message.answer(dialog.take("error"))
 
 
+
+
+# 
+# | Delete |
+# 
 
 # Обработчик для подготовки к удалению в Questions_Actions
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Questions_Actions"), DataBaseCallbackFactory.filter(F.action == "delete"))
@@ -92,7 +109,7 @@ async def prepare_delete_admin_handler(callback: CallbackQuery, state: FSMContex
 async def prepare_delete_admin_handler(message: Message, state: FSMContext):
     id, = message.text.split()
 
-    if db.questions_actions.delete(id):
+    if await db.questions_actions.delete(id): # Проверка на выполнения запроса
         await message.answer(dialog.take("deleted"))
     else:
         await message.answer(dialog.take("error"))

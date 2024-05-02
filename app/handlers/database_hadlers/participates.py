@@ -1,5 +1,5 @@
 # 
-# |CRUD на Participates|
+# |Read на Participates|
 # 
 
 
@@ -22,12 +22,16 @@ router = Router() # маршрутизатор
 dialog = Dialog(Dialog.database_handlers.participates) # текст программы
 
 
+# 
+# | Read |
+# 
+
 # Обработчик на чтение Participates
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Participates"), DataBaseCallbackFactory.filter(F.action == "read"))
 async def read_Participates_handler(callback: CallbackQuery):
-    participates = db.participates.read()
+    participates = await db.participates.read()
 
-    if not participates:
+    if not participates: # Проверка на пустоту и выполнения запроса
         return await callback.message.answer(dialog.take("base_empty"))
 
     response = '\n'.join([dialog.take("read") % partipate for partipate in participates])

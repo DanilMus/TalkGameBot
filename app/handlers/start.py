@@ -22,10 +22,10 @@ dialog = Dialog(Dialog.start) # класс с диалогами
 @router.message(Command("start"))
 async def start_handler(message: Message, state: FSMContext):
     # Добавляем нового игрока в базу, если его нет
-    db.connect()
-    if not db.gamers.is_exists(message.from_user.id):
-        db.gamers.create(message.from_user.id, message.from_user.username)
-    db.close()
+    await db.connect()
+    if not await db.gamers.is_exists(message.from_user.id):
+        await db.gamers.create(message.from_user.id, message.from_user.username)
+    await db.close()
 
     await state.clear() # сбрасываение состояний
 
