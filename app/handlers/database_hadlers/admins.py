@@ -34,13 +34,9 @@ class IsCreatorMiddleware(BaseMiddleware):
             event: TelegramObject,
             data: Dict[str, Any]
     ) -> Any:
-        # Можно подстраховаться и игнорировать мидлварь, если она установлена по ошибке НЕ на колбэки
-        if not isinstance(event, CallbackQuery):
-            logger.error("Мидлварь не установлена")
-            return await handler(event, data)
-
+        user = data["event_from_user"]
         # Если это не админ или не главный админ, то не работаем с этим пользовалетелем
-        if event.from_user.id != config.creator:
+        if user.id != config.creator:
             await event.answer(dialog.take("no_rules"))
             return
         

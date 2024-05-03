@@ -18,7 +18,7 @@ from random import randint
 
 # Собственные модули
 from app.dialog import Dialog
-from app.database import db, DataBase
+from app.database import DataBase
 from app.callbacks import GameCallBackFactory
 
 
@@ -97,11 +97,10 @@ async def choosing_participants_handler(callback: CallbackQuery, state: FSMConte
 @router.message(IsChatOwnerFilter(), StateFilter(GameStates.choosing_participants), F.text.lower() == "закончили")
 async def ending_choosing_participants_handler(message: Message, state: FSMContext):
     data = await state.get_data()
-    
-    await db.connect()
-    members = len(data["participants"])
-    rounds = db.questions_actions.rounds(members)
-    await db.close()
+
+    async with DataBase.Questions_Actions() as questions_actions:
+        members = len(data["participants"])
+        rounds = await questions_actions.rounds(members)
 
     if members < 2:
         return await message.answer((dialog.take("problem_with_participants")))

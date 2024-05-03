@@ -11,7 +11,7 @@ import logging
 
 # свои модули
 from app.dialog import Dialog
-from app.database import db
+from app.database import DataBase
 from app.callbacks import DataBaseCallbackFactory
 
 
@@ -29,7 +29,8 @@ dialog = Dialog(Dialog.database_handlers.participates) # текст програ
 # Обработчик на чтение Participates
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Participates"), DataBaseCallbackFactory.filter(F.action == "read"))
 async def read_Participates_handler(callback: CallbackQuery):
-    participates = await db.participates.read()
+    async with DataBase.Participates() as participates:
+        participates = await participates.read()
 
     if not participates: # Проверка на пустоту и выполнения запроса
         return await callback.message.answer(dialog.take("base_empty"))

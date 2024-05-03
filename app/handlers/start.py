@@ -8,7 +8,7 @@ import logging
 
 # Общение с пользователем
 from app.dialog import Dialog
-from app.database import db
+from app.database import DataBase
 
 
 # Переменные для оргиназации работы
@@ -22,10 +22,9 @@ dialog = Dialog(Dialog.start) # класс с диалогами
 @router.message(Command("start"))
 async def start_handler(message: Message, state: FSMContext):
     # Добавляем нового игрока в базу, если его нет
-    await db.connect()
-    if not await db.gamers.is_exists(message.from_user.id):
-        await db.gamers.create(message.from_user.id, message.from_user.username)
-    await db.close()
+    async with DataBase.Gamers() as gamers:
+        if not await gamers.is_exists(message.from_user.id):
+            await gamers.create(message.from_user.id, message.from_user.username)
 
     await state.clear() # сбрасываение состояний
 

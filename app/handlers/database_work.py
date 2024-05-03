@@ -45,14 +45,12 @@ class IsAdminMiddleware(BaseMiddleware):
             event: TelegramObject,
             data: Dict[str, Any]
     ) -> Any:
-        # Можно подстраховаться и игнорировать мидлварь, если она установлена по ошибке НЕ на колбэки
-        if not isinstance(event, CallbackQuery):
-            logger.error("Мидлварь не установлена")
-            return await handler(event, data)
+        user = data["event_from_user"]
 
         async with DataBase.Admins() as admins:
             # Если это не админ или не главный админ, то не работаем с этим пользовалетелем
-            if not await admins.is_exists(event.from_user.id) or event.from_user.id != config.creator:
+            # (еще можно заметить, что можно использовать 2 способа достать id пользователя)
+            if not await admins.is_exists(user.id) and event.from_user.id != config.creator:
                 await event.answer(dialog.take("no_rules"))
                 return
         
@@ -98,11 +96,6 @@ def kb_for_db_handler() -> InlineKeyboardBuilder:
 async def db_handler(message: Message, state: FSMContext):
     await state.clear()
 
-    # Проверка прав
-    async with DataBase.Admins() as admins:
-        if not (await admins.is_exists(message.from_user.id) or message.from_user.id == config.creator):
-            return await message.answer(dialog.take("no_rules"))
-
     await message.answer(dialog.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
 
 
@@ -128,10 +121,6 @@ async def db_handler2(callback: CallbackQuery, state: FSMContext):
 async def admins_handler(callback: CallbackQuery, callback_data: DataBaseCallbackFactory, state: FSMContext):
     await state.clear()
     table = callback_data.table
-
-    if table == "Admins" and config.creator != callback.from_user.id:
-        callback_data= DataBaseCallbackFactory(table= "all", action= "begin")
-        return await callback.message.answer(dialog.take("no_rules"))
 
     kb = InlineKeyboardBuilder()
     if table == "Admins" or table == "Questions_Actions": # Только у этих таблиц есть возможность редактирования

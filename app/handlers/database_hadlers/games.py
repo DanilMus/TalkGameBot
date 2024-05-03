@@ -11,7 +11,7 @@ import logging
 
 # свои модули
 from app.dialog import Dialog
-from app.database import db
+from app.database import DataBase
 from app.callbacks import DataBaseCallbackFactory
 
 
@@ -31,7 +31,8 @@ dialog = Dialog(Dialog.database_handlers.games) # текст программы
 # Обработчик на чтение Games
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Games"), DataBaseCallbackFactory.filter(F.action == "read"))
 async def read_games_handler(callback: CallbackQuery):
-    games = await db.games.read()
+    async with DataBase.Games() as games:
+        games = await games.read()
 
     if not games: # Проверка на пустоту и выполнения запроса
         return await callback.message.answer(dialog.take("base_empty"))

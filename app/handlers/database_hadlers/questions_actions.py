@@ -13,7 +13,7 @@ import logging
 
 # свои модули
 from app.dialog import Dialog
-from app.database import db
+from app.database import DataBase
 from app.callbacks import DataBaseCallbackFactory
 
 
@@ -47,10 +47,11 @@ async def prepare_create_admin_handler(callback: CallbackQuery, state: FSMContex
 async def prepare_create_admin_handler(message: Message, state: FSMContext):
     question_or_action, category, task = message.text.split("_")
 
-    if await db.questions_actions.create(message.from_user.id, bool(int(question_or_action)), category, task): # Проверка на выполение запроса
-        await message.answer(dialog.take("created"))
-    else:
-        await message.answer(dialog.take("error"))
+    async with DataBase.Questions_Actions() as questions_actions:
+        if await questions_actions.create(message.from_user.id, bool(int(question_or_action)), category, task): # Проверка на выполение запроса
+            await message.answer(dialog.take("created"))
+        else:
+            await message.answer(dialog.take("error"))
 
 
 
@@ -61,7 +62,8 @@ async def prepare_create_admin_handler(message: Message, state: FSMContext):
 # Обработчик на чтение Questions_Actions
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Questions_Actions"), DataBaseCallbackFactory.filter(F.action == "read"))
 async def read_question_action_handler(callback: CallbackQuery):
-    questions_actions = await db.questions_actions.read()
+    async with DataBase.Questions_Actions() as questions_actions:
+        questions_actions = await questions_actions.read()
 
     if not questions_actions: # Проверка на пустоту и выполнения запроса
         return await callback.message.answer(dialog.take("base_empty"))
@@ -86,10 +88,11 @@ async def prepare_update_admin_handler(callback: CallbackQuery, state: FSMContex
 async def prepare_update_admin_handler(message: Message, state: FSMContext):
     id, question_or_action, category, task = message.text.split("_")
 
-    if await db.questions_actions.update(message.from_user.id, id, bool(int(question_or_action)), category, task): # Проверка на выполнения запроса
-        await message.answer(dialog.take("updated"))
-    else:
-        await message.answer(dialog.take("error"))
+    async with DataBase.Questions_Actions() as questions_actions:
+        if await questions_actions.update(message.from_user.id, id, bool(int(question_or_action)), category, task): # Проверка на выполнения запроса
+            await message.answer(dialog.take("updated"))
+        else:
+            await message.answer(dialog.take("error"))
 
 
 
@@ -109,7 +112,8 @@ async def prepare_delete_admin_handler(callback: CallbackQuery, state: FSMContex
 async def prepare_delete_admin_handler(message: Message, state: FSMContext):
     id, = message.text.split()
 
-    if await db.questions_actions.delete(id): # Проверка на выполнения запроса
-        await message.answer(dialog.take("deleted"))
-    else:
-        await message.answer(dialog.take("error"))
+    async with DataBase.Questions_Actions() as questions_actions:
+        if await questions_actions.delete(id): # Проверка на выполнения запроса
+            await message.answer(dialog.take("deleted"))
+        else:
+            await message.answer(dialog.take("error"))

@@ -63,13 +63,17 @@ class DataBase():
         
         # Подключение и отключение автоматически и ассинхронно с использованием with
         async def __aenter__(self):
-            self.connection = mysql.connector.connect(user= config.db_user, 
-                                                            password= config.db_password,
-                                                            host= config.db_host,
-                                                            database=config.db_name,
-                                                            charset= "utf8")
-            self.cursor = self.connection.cursor()
-            return self
+            try:
+                self.connection = mysql.connector.connect(user= config.db_user, 
+                                                                password= config.db_password,
+                                                                host= config.db_host,
+                                                                database=config.db_name,
+                                                                charset= "utf8")
+                self.cursor = self.connection.cursor()
+                return self
+            except Exception as ex:
+                logger.error(f"Проблема с БД: {ex}")
+                return None
         
         async def __aexit__(self, exc_type, exc_val, exc_tb):
             self.cursor.close()
@@ -107,7 +111,7 @@ class DataBase():
         
         # Функция для удаления (она тоже у всех одинаковая)
         async def delete(self, id):
-            await self.w(f"DELETE FROM {self.table_name} WHERE id = %s", (id,))
+            return await self.w(f"DELETE FROM {self.table_name} WHERE id = %s", (id,))
 
     # База для взаимодействия с таблицами Gamers, Admins
     class __PeopleBase(__Base, ABC):
@@ -142,7 +146,7 @@ class DataBase():
 
     # Класс для взаимодействия с таблицей Admins
     class Admins(__PeopleBase):
-        def __init__(self, connection: mysql.connector.MySQLConnection, cursor: mysql.connector.cursor.MySQLCursor):
+        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
             super().__init__(connection, cursor, "Admins")
 
 
@@ -164,7 +168,7 @@ class DataBase():
 
     # Класс для взаимодействия с таблицей Questions_Actions
     class Questions_Actions(__Base):
-        def __init__(self, connection: mysql.connector.MySQLConnection, cursor: mysql.connector.cursor.MySQLCursor):
+        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
             super().__init__(connection, cursor, "Questions_Actions")
 
         # Функция для добавления вопроса/действия
@@ -195,7 +199,7 @@ class DataBase():
     
     # Класс для взаимодействия с таблицей Questions_Actions_From_Gamers
     class Questions_Actions_From_Gamers(__Base):
-        def __init__(self, connection: mysql.connector.MySQLConnection, cursor: mysql.connector.cursor.MySQLCursor):
+        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
             super().__init__(connection, cursor, "Questions_Actions_From_Gamers")
 
         # Функция для добавления вопроса/действия от игрока
@@ -208,7 +212,7 @@ class DataBase():
     
     # Класс для взаимодействия с таблицей Answers
     class Answers(__Base):
-        def __init__(self, connection: mysql.connector.MySQLConnection, cursor: mysql.connector.cursor.MySQLCursor):
+        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
             super().__init__(connection, cursor, "Answers")
 
         # Функция для добавления ответа
@@ -227,7 +231,7 @@ class DataBase():
         
     # Класс для взаимодействия с таблицей Participates
     class Participates(__Base):
-        def __init__(self, connection: mysql.connector.MySQLConnection, cursor: mysql.connector.cursor.MySQLCursor):
+        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
             super().__init__(connection, cursor, "Participates")
 
         # Функция для добавления подключения участника
@@ -250,3 +254,12 @@ class DataBase():
         
 
 # db = DataBase() # экземпляр класса для взаимодействия
+# import asyncio
+# async def f():
+#     async with DataBase.Admins() as admins:
+#         admins = await admins.read()
+#         print(admins)
+    
+#     print(admins)
+
+# asyncio.run(f())
