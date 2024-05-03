@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, Awaitable
 from app.dialog import Dialog
 from app.database import DataBase
 from app.callbacks import DataBaseCallbackFactory
+from app.states import AdminsStates
 from config import config
 
 
@@ -45,12 +46,6 @@ class IsCreatorMiddleware(BaseMiddleware):
 router.message.outer_middleware(IsCreatorMiddleware())
 router.callback_query.outer_middleware(IsCreatorMiddleware())
         
-
-# Класс для управления состояниями
-class AdminsStates(StatesGroup):
-    choosing_create = State()
-    choosing_update = State()
-    choosing_delete = State()
 
 
 #

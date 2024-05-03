@@ -1,3 +1,7 @@
+# 
+# | Файл настройки бота |
+# 
+
 # Библиотеки
 import asyncio # стандартная библиотека ассинхронного программирования
 import logging # логирование, или запись событий в журнал
@@ -12,7 +16,9 @@ from config.config import token
 # Обработчики
 from app.handlers import start
 from app.handlers import database_work
-from app.handlers import game_
+from app.handlers import game
+
+
 
 logger = logging.getLogger(__name__)
 async def main():
@@ -35,9 +41,11 @@ async def main():
     await bot.set_my_commands(commands)
     
     # Включение обработчиков
-    dp.include_router(database_work.router)
-    dp.include_router(game_.router)
-    dp.include_router(start.router)
+    dp.include_routers(
+        database_work.router,
+        game.router,
+        start.router,
+    )
 
     # Начало работы
     logger.info("Бот начал работу")

@@ -15,6 +15,7 @@ import logging
 from app.dialog import Dialog
 from app.database import DataBase
 from app.callbacks import DataBaseCallbackFactory
+from app.states import Questions_ActionsStates
 
 
 
@@ -23,12 +24,6 @@ logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
 dialog = Dialog(Dialog.database_handlers.questions_actions) # текст программы
 
-
-# Класс для управления состояниями
-class Questions_ActionsStates(StatesGroup):
-    choosing_create = State()
-    choosing_update = State()
-    choosing_delete = State() 
 
 
 

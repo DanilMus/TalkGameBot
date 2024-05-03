@@ -16,43 +16,6 @@ from config import config
 logger = logging.getLogger(__name__) # логирование событий
 # Класс для взаимодействия с базой
 class DataBase():
-    # def __init__(self):
-    #     # Создаем соединение с базой данных
-    #     self.connection = None
-    #     self.cursor = None
-        
-    #     self.gamers = self.Gamers(self.connection, self.cursor)
-    #     self.admins = self.Admins(self.connection, self.cursor)
-    #     self.games = self.Games(self.connection, self.cursor)
-    #     self.questions_actions = self.Questions_Actions(self.connection, self.cursor)
-    #     self.questions_actions_from_gamers = self.Questions_Actions_From_Gamers(self.connection, self.cursor)
-    #     self.answers = self.Answers(self.connection, self.cursor)
-    #     self.participates = self.Participates(self.connection, self.cursor)
-    
-    # # Закрытие соединения
-    # async def close(self):
-    #     self.cursor.close()
-    #     self.connection.close()
-    
-    
-    # # Восстановление соединения
-    # def _connect(self) -> bool:
-    #     self.connection = mysql.connector.connect(user= config.db_user, 
-    #                                                 password= config.db_password,
-    #                                                 host= config.db_host,
-    #                                                 database=config.db_name,
-    #                                                 charset= "utf8")
-    #     self.cursor = self.connection.cursor()
-    #     return True
-
-    # async def connect(self) -> bool:
-    #     try:
-    #         return self._connect()
-    #     except Exception as ex:
-    #         logger.error(f"Произошла ошибка с подключением к БД: {ex}")
-    #         return False
-    
-
     # База для взаимодействиями с таблицами
     class __Base(ABC):
         def __init__(self, connection: mysql.connector.MySQLConnection, cursor: mysql.connector.cursor.MySQLCursor, table_name: str):
@@ -112,7 +75,6 @@ class DataBase():
         # Функция для удаления (она тоже у всех одинаковая)
         async def delete(self, id):
             return await self.w(f"DELETE FROM {self.table_name} WHERE id = %s", (id,))
-
     # База для взаимодействия с таблицами Gamers, Admins
     class __PeopleBase(__Base, ABC):
         # Метод для проверки существования в таблице
@@ -143,12 +105,10 @@ class DataBase():
         def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
             super().__init__(connection, cursor, "Gamers")
 
-
     # Класс для взаимодействия с таблицей Admins
     class Admins(__PeopleBase):
         def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
             super().__init__(connection, cursor, "Admins")
-
 
     # Класс для взаимодействия с таблицей Games
     class Games(__Base):
@@ -164,7 +124,6 @@ class DataBase():
         async def create_end(self):
             timing = datetime.now()
             await self.w(f"INSERT INTO {self.table_name} (start_or_end, timing) VALUES (%s, %s)", (1, timing))
-
 
     # Класс для взаимодействия с таблицей Questions_Actions
     class Questions_Actions(__Base):
@@ -228,7 +187,7 @@ class DataBase():
                 f"UPDATE {self.table_name} SET id_game = %s, id_gamer = %s, id_question_action = %s, id_question_action_from_gamer = %s, answer_start = %s, answer_end = %s, score = %s WHERE id = %s", 
                 (id_game, id_gamer, id_question_action, id_question_action_from_gamer, answer_start, answer_end, score, id)
                 )
-        
+
     # Класс для взаимодействия с таблицей Participates
     class Participates(__Base):
         def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
@@ -250,16 +209,3 @@ class DataBase():
                 (id_game, id_gamer, 1, timing)
                 )
         
-    
-        
-
-# db = DataBase() # экземпляр класса для взаимодействия
-# import asyncio
-# async def f():
-#     async with DataBase.Admins() as admins:
-#         admins = await admins.read()
-#         print(admins)
-    
-#     print(admins)
-
-# asyncio.run(f())
