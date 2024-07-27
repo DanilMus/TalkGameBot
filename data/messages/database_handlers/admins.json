@@ -1,0 +1,7 @@
+{
+    "example": ["Укажи ID и username.\nПример: 1 Ivan"],
+    "created": ["Админ успешно добавлен"],
+    "read": ["ID: <code>%s</code> \tusername: @%s"],
+    "updated": ["Админ успешно изменен"],
+    "deleted": ["Админ успешно удален"]
+}

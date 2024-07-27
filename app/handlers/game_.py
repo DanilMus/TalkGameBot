@@ -18,7 +18,7 @@ from random import randint
 
 # Собственные модули
 from app.dialog import Dialog
-from database import db
+from app.database_ import db
 from app.callbacks import GameCallBackFactory
 
 

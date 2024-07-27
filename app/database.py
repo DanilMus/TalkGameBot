@@ -1,211 +1,242 @@
-# 
-# Взаимодействие с БД
-# 
-
-# Библиотеки
-import mysql.connector
-import mysql.connector.cursor
-import logging
-from abc import ABC # Для создания абстрактных классов
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy.future import select
 from datetime import datetime
-
-# Свои модули
+import logging
 from config import config
 
+DATABASE_URL = f"mysql+aiomysql://{config.db_user}:{config.db_password}@{config.db_host}/{config.db_name}"
 
-logger = logging.getLogger(__name__) # логирование событий
-# Класс для взаимодействия с базой
-class DataBase():
-    # База для взаимодействиями с таблицами
-    class __Base(ABC):
-        def __init__(self, connection: mysql.connector.MySQLConnection, cursor: mysql.connector.cursor.MySQLCursor, table_name: str):
-            self.connection = connection
-            self.cursor = cursor
-            self.table_name = table_name
+engine = create_async_engine(DATABASE_URL, echo=True)
+Base = declarative_base()
+async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
-        
-        # Подключение и отключение автоматически и ассинхронно с использованием with
-        async def __aenter__(self):
+logger = logging.getLogger(__name__)
+
+class Gamer(Base):
+    __tablename__ = "Gamers"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(63), index=True)
+
+class Admin(Base):
+    __tablename__ = "Admins"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(63), index=True)
+
+class Game(Base):
+    __tablename__ = "Games"
+    id = Column(Integer, primary_key=True, index=True)
+    start_or_end = Column(Boolean)
+    timing = Column(DateTime)
+
+class QuestionAction(Base):
+    __tablename__ = "Questions_Actions"
+    id = Column(Integer, primary_key=True, index=True)
+    id_admin = Column(Integer, ForeignKey('Admins.id'))
+    questions_or_actions = Column(Boolean)
+    category = Column(String(127))
+    question_action = Column(String, unique=True)
+    admin = relationship("Admin")
+
+class QuestionActionFromGamer(Base):
+    __tablename__ = "Questions_Actions_From_Gamers"
+    id = Column(Integer, primary_key=True, index=True)
+    id_gamer = Column(Integer, ForeignKey('Gamers.id'))
+    question_action = Column(String)
+    gamer = relationship("Gamer")
+
+class Answer(Base):
+    __tablename__ = "Answers"
+    id = Column(Integer, primary_key=True, index=True)
+    id_game = Column(Integer, ForeignKey('Games.id'))
+    id_gamer = Column(Integer, ForeignKey('Gamers.id'))
+    id_question_action = Column(Integer, ForeignKey('Questions_Actions.id'), nullable=True)
+    id_question_action_from_gamer = Column(Integer, ForeignKey('Questions_Actions_From_Gamers.id'), nullable=True)
+    answer_start = Column(DateTime)
+    answer_end = Column(DateTime)
+    score = Column(Integer)
+    game = relationship("Game")
+    gamer = relationship("Gamer")
+    question_action = relationship("QuestionAction", foreign_keys=[id_question_action])
+    question_action_from_gamer = relationship("QuestionActionFromGamer", foreign_keys=[id_question_action_from_gamer])
+
+class Participate(Base):
+    __tablename__ = "Participates"
+    id = Column(Integer, primary_key=True, index=True)
+    id_game = Column(Integer, ForeignKey('Games.id'))
+    id_gamer = Column(Integer, ForeignKey('Gamers.id'))
+    connection_or_disconnection = Column(Boolean)
+    timing = Column(DateTime)
+    game = relationship("Game")
+    gamer = relationship("Gamer")
+
+class DataBase:
+    class __Base:
+        def __init__(self, session, model):
+            self.session = session
+            self.model = model
+
+        async def create(self, **kwargs):
             try:
-                self.connection = mysql.connector.connect(user= config.db_user, 
-                                                                password= config.db_password,
-                                                                host= config.db_host,
-                                                                database=config.db_name,
-                                                                charset= "utf8")
-                self.cursor = self.connection.cursor()
-                return self
+                async with self.session as session:
+                    async with session.begin():
+                        instance = self.model(**kwargs)
+                        session.add(instance)
+                    await session.commit()
+                    return instance
             except Exception as ex:
-                logger.error(f"Проблема с БД: {ex}")
+                logger.error(f"Ошибка создания записи в таблице {self.model.__tablename__}: {ex}")
                 return None
-        
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            self.cursor.close()
-            self.connection.close()
 
-
-        # Для чтения
-        async def r(self, query: str, data = ()):
-            try: 
-                self.cursor.execute(query, data)
-                return self.cursor.fetchall() 
-            except mysql.connector.Error as err:
-                logger.error(f"Проблема с подключением к базе: {err}")
-                return None
-            except Exception as ex:
-                logger.error(f"Что-то пошло не так: {ex}")
-                return None
-        
-        # Для записи
-        async def w(self, query: str, data = ()):
+        async def read(self, id):
             try:
-                self.cursor.execute(query, data)
-                self.connection.commit()
-                return True
-            except mysql.connector.Error as err:
-                logger.error(f"Проблема с подключением к базе: {err}")
-                return False
+                async with self.session as session:
+                    result = await session.execute(select(self.model).where(self.model.id == id))
+                    return result.scalars().first()
             except Exception as ex:
-                logger.error(f"Что-то пошло не так: {ex}")
-                return False
-            
-        # Функция для чтения (она у всех одинаковая, как ни странно)
-        async def read(self):
-            return await self.r(f"SELECT * FROM {self.table_name}")
-        
-        # Функция для удаления (она тоже у всех одинаковая)
+                logger.error(f"Ошибка чтения записи из таблицы {self.model.__tablename__}: {ex}")
+                return None
+
+        async def read_all(self):
+            try:
+                async with self.session as session:
+                    result = await session.execute(select(self.model))
+                    return result.scalars().all()
+            except Exception as ex:
+                logger.error(f"Ошибка чтения всех записей из таблицы {self.model.__tablename__}: {ex}")
+                return []
+
+        async def update(self, id, **kwargs):
+            try:
+                async with self.session as session:
+                    async with session.begin():
+                        result = await session.execute(select(self.model).where(self.model.id == id))
+                        instance = result.scalars().first()
+                        if instance:
+                            for key, value in kwargs.items():
+                                setattr(instance, key, value)
+                            session.add(instance)
+                        else:
+                            return None
+                    await session.commit()
+                    return instance
+            except Exception as ex:
+                logger.error(f"Ошибка обновления записи в таблице {self.model.__tablename__}: {ex}")
+                return None
+
         async def delete(self, id):
-            return await self.w(f"DELETE FROM {self.table_name} WHERE id = %s", (id,))
-    # База для взаимодействия с таблицами Gamers, Admins
-    class __PeopleBase(__Base, ABC):
-        # Метод для проверки существования в таблице
-        async def is_exists(self, id):
-            try: 
-                query = (f"SELECT * FROM {self.table_name} WHERE id = %s")
-                data = (id, )
-                self.cursor.execute(query, data)
-                return self.cursor.fetchone() is not None
-            except mysql.connector.Error as err:
-                logger.error(f"Проблема с подключением к базе: {err}")
-                return None
+            try:
+                async with self.session as session:
+                    async with session.begin():
+                        result = await session.execute(select(self.model).where(self.model.id == id))
+                        instance = result.scalars().first()
+                        if instance:
+                            await session.delete(instance)
+                            await session.commit()
+                            return instance
+                        else:
+                            await session.rollback()
+                            return None
             except Exception as ex:
-                logger.error(f"Что-то пошло не так: {ex}")
+                logger.error(f"Ошибка удаления записи из таблицы {self.model.__tablename__}: {ex}")
                 return None
-
-        # Функция для добавления человека
-        async def create(self, id, username):
-            return await self.w(f"INSERT INTO {self.table_name} (id, username) VALUES (%s, %s)", (id, username))
-
-        # Функция для обновления информации об человеке
-        async def update(self, id, username):
-            return await self.w(f"UPDATE {self.table_name} SET username = %s WHERE id = %s", (username, id))
-
-
-    # Класс для взаимодействия с таблицей Gamers
-    class Gamers(__PeopleBase):
-        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
-            super().__init__(connection, cursor, "Gamers")
-
-    # Класс для взаимодействия с таблицей Admins
-    class Admins(__PeopleBase):
-        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
-            super().__init__(connection, cursor, "Admins")
-
-    # Класс для взаимодействия с таблицей Games
-    class Games(__Base):
-        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
-            super().__init__(connection, cursor, "Games")
-        
-        # Функция для добавления начала игры
-        async def create_start(self):
-            timing = datetime.now()
-            await self.w(f"INSERT INTO {self.table_name} (start_or_end, timing) VALUES (%s, %s)", (0, timing))
-
-        # Функция для добавления конца игры
-        async def create_end(self):
-            timing = datetime.now()
-            await self.w(f"INSERT INTO {self.table_name} (start_or_end, timing) VALUES (%s, %s)", (1, timing))
-
-    # Класс для взаимодействия с таблицей Questions_Actions
-    class Questions_Actions(__Base):
-        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
-            super().__init__(connection, cursor, "Questions_Actions")
-
-        # Функция для добавления вопроса/действия
-        async def create(self, id_admin, questions_or_actions, category, question_action):
-            query = f"INSERT INTO {self.table_name} (id_admin, questions_or_actions, category, question_action) VALUES (%s, %s, %s, %s)"
-            return await self.w(query, (id_admin, questions_or_actions, category, question_action))
-
-        # Функция для обновления вопроса/действия
-        async def update(self, id_admin, id, questions_or_actions, category, question_action):
-            query = f"UPDATE {self.table_name} SET id_admin = %s, questions_or_actions = %s, category = %s, question_action = %s WHERE id = %s"
-            return await self.w(query, (id_admin, questions_or_actions, category, question_action, id))
-        
-        # Фунция для взятие количества мин строк по вопросам или действиям, для подсчета кол-ва раундов, которые может провести игра
-        async def rounds(self, count_members: int):
-            query_false = await self.r(f"SELECT COUNT(*) FROM {self.table_name} WHERE questions_or_actions = false")[0][0]
-            query_true = await self.r(f"SELECT COUNT(*) FROM {self.table_name} WHERE questions_or_actions = true")[0][0]
-            return int(min(query_false, query_true) / count_members)
-        
-        # Функция для взятия вопросов и действий
-        async def questions_actions(self):
-            query_false = await self.r(f"SELECT question_action FROM {self.table_name} WHERE questions_or_actions = false")
-            query_true = await self.r(f"SELECT question_action FROM {self.table_name} WHERE questions_or_actions = true")
             
-            query_false = [elem[0] for elem in query_false]
-            query_true = [elem[0] for elem in query_true]
+        async def is_exists(self, id):
+            try:
+                async with self.session as session:
+                    result = await session.execute(select(self.model).where(self.model.id == id))
+                    return result.scalars().first() is not None
+            except Exception as ex:
+                logger.error(f"Ошибка проверки наличия записи в таблице {self.model.__tablename__}: {ex}")
+                return False
 
-            return {"question": query_false, "action": query_true}
-    
-    # Класс для взаимодействия с таблицей Questions_Actions_From_Gamers
+    class Gamers(__Base):
+        def __init__(self, session):
+            super().__init__(session, Gamer)
+
+    class Admins(__Base):
+        def __init__(self, session):
+            super().__init__(session, Admin)
+
+    class Games(__Base):
+        def __init__(self, session):
+            super().__init__(session, Game)
+
+        async def create_start(self):
+            return await self.create(start_or_end=False, timing=datetime.now())
+
+        async def create_end(self):
+            return await self.create(start_or_end=True, timing=datetime.now())
+
+    class Questions_Actions(__Base):
+        def __init__(self, session):
+            super().__init__(session, QuestionAction)
+
+        async def rounds(self, count_members: int):
+            try:
+                async with self.session as session:
+                    result_false = await session.execute(select(self.model).where(self.model.questions_or_actions == False))
+                    count_false = result_false.scalars().count()
+                    result_true = await session.execute(select(self.model).where(self.model.questions_or_actions == True))
+                    count_true = result_true.scalars().count()
+                    return int(min(count_false, count_true) / count_members)
+            except Exception as ex:
+                logger.error(f"Ошибка расчета количества раундов в таблице {self.model.__tablename__}: {ex}")
+                return 0
+
+        async def questions_actions(self):
+            try:
+                async with self.session() as session:
+                    result_false = await session.execute(select(self.model).where(self.model.questions_or_actions == False))
+                    questions = [elem.question_action for elem in result_false.scalars().all()]
+                    result_true = await session.execute(select(self.model).where(self.model.questions_or_actions == True))
+                    actions = [elem.question_action for elem in result_true.scalars().all()]
+                    return {"question": questions, "action": actions}
+            except Exception as ex:
+                logger.error(f"Ошибка получения вопросов и действий из таблицы {self.model.__tablename__}: {ex}")
+                return {"question": [], "action": []}
+
     class Questions_Actions_From_Gamers(__Base):
-        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
-            super().__init__(connection, cursor, "Questions_Actions_From_Gamers")
+        def __init__(self, session):
+            super().__init__(session, QuestionActionFromGamer)
 
-        # Функция для добавления вопроса/действия от игрока
-        async def create(self, id_gamer, question_action):
-            await self.w(f"INSERT INTO {self.table_name} (id_gamer, question_action) VALUES (%s, %s)", (id_gamer, question_action))
-
-        # Функция для обновления вопроса/действия от игрока
-        async def update(self, id, id_gamer, question_action):
-            await self.w(f"UPDATE {self.table_name} SET id_gamer = %s, question_action = %s WHERE id = %s", (id_gamer, question_action, id))
-    
-    # Класс для взаимодействия с таблицей Answers
     class Answers(__Base):
-        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
-            super().__init__(connection, cursor, "Answers")
+        def __init__(self, session):
+            super().__init__(session, Answer)
 
-        # Функция для добавления ответа
-        async def create(self, id_game, id_gamer, id_question_action, id_question_action_from_gamer, answer_start, answer_end, score):
-            await self.w(
-                f"INSERT INTO {self.table_name} (id_game, id_gamer, id_question_action, id_question_action_from_gamer, answer_start, answer_end, score) VALUES (%s, %s, %s, %s, %s, %s, %s)", 
-                (id_game, id_gamer, id_question_action, id_question_action_from_gamer, answer_start, answer_end, score)
-                )
-
-        # Функция для обновления ответа
-        async def update(self, id, id_game, id_gamer, id_question_action, id_question_action_from_gamer, answer_start, answer_end, score):
-            await self.w(
-                f"UPDATE {self.table_name} SET id_game = %s, id_gamer = %s, id_question_action = %s, id_question_action_from_gamer = %s, answer_start = %s, answer_end = %s, score = %s WHERE id = %s", 
-                (id_game, id_gamer, id_question_action, id_question_action_from_gamer, answer_start, answer_end, score, id)
-                )
-
-    # Класс для взаимодействия с таблицей Participates
     class Participates(__Base):
-        def __init__(self, connection: mysql.connector.MySQLConnection = None, cursor: mysql.connector.cursor.MySQLCursor = None):
-            super().__init__(connection, cursor, "Participates")
+        def __init__(self, session):
+            super().__init__(session, Participate)
 
-        # Функция для добавления подключения участника
         async def create_connection(self, id_game, id_gamer):
-            timing = datetime.now()
-            await self.w(
-                f"INSERT INTO {self.table_name} (id_game, id_gamer, connection_or_disconnection, timing) VALUES (%s, %s, %s, %s)", 
-                (id_game, id_gamer, 0, timing)
-                )
+            return await self.create(id_game=id_game, id_gamer=id_gamer, connection_or_disconnection=False, timing=datetime.now())
 
-        # Функция для добавления отключения участника
         async def create_disconnection(self, id_game, id_gamer):
-            timing = datetime.now()
-            await self.w(
-                f"INSERT INTO {self.table_name} (id_game, id_gamer, connection_or_disconnection, timing) VALUES (%s, %s, %s, %s)", 
-                (id_game, id_gamer, 1, timing)
-                )
-        
+            return await self.create(id_game=id_game, id_gamer=id_gamer, connection_or_disconnection=True, timing=datetime.now())
+
+
+# Пример использования базы данных
+if __name__ == "__main__":
+    import asyncio
+
+    async def example_usage():
+        async with async_session() as session:
+            gamers_db = DataBase.Gamers(session)
+            # Добавление записи
+            await gamers_db.create(id= 12345, username= 'example_user')
+            exists = await gamers_db.is_exists(12345)
+            print(f"Gamer exists: {exists}")
+
+            # Чтение всех записей
+            all_gamers = await gamers_db.read_all()
+            print("All gamers:")
+            for gamer in all_gamers:
+                print(f"ID: {gamer.id}, Username: {gamer.username}")
+            
+            # Удаление записи
+            await gamers_db.delete(id=12345)
+            exists = await gamers_db.is_exists(12345)
+            print(f"Gamer exists: {exists}")
+
+    asyncio.run(example_usage())

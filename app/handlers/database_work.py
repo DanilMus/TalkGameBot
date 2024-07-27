@@ -5,7 +5,7 @@
 # библиотеки
 from aiogram import F, Router, BaseMiddleware
 from aiogram.types import Message, CallbackQuery, TelegramObject
-from aiogram.filters import Command, BaseFilter
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Awaitable
 
 # свои модули
 from app.dialog import Dialog
-from app.database import DataBase
+from app.database import DataBase, async_session
 from app.callbacks import DataBaseCallbackFactory
 from app.handlers.database_hadlers import gamers, admins, games, questions_actions, questions_actions_from_gamers, answers, participates
 from config import config
@@ -47,20 +47,19 @@ class IsAdminMiddleware(BaseMiddleware):
     ) -> Any:
         user = data["event_from_user"]
 
-        async with DataBase.Admins() as admins:
+        async with async_session() as session:
+            admins_db = DataBase.Admins(session)
             # Если это не админ или не главный админ, то не работаем с этим пользовалетелем
             # (еще можно заметить, что можно использовать 2 способа достать id пользователя)
-            if not await admins.is_exists(user.id) and event.from_user.id != config.creator:
+            if not await admins_db.is_exists(user.id) and event.from_user.id != config.creator:
                 await event.answer(dialog.take("no_rules"))
                 return
         
         return await handler(event, data)
-
+# Подключение этой мидлвари на сообщения и на колбэки
 router.message.outer_middleware(IsAdminMiddleware())
 router.callback_query.outer_middleware(IsAdminMiddleware())
 
-
-        
 
 
 
@@ -68,34 +67,29 @@ router.callback_query.outer_middleware(IsAdminMiddleware())
 def kb_for_db_handler() -> InlineKeyboardBuilder:
     kb = InlineKeyboardBuilder()
 
+    # 1 строка
     kb.button(text= "Игроки", callback_data= DataBaseCallbackFactory(table= "Gamers", action= "start"))
     kb.button(text= "Админы", callback_data= DataBaseCallbackFactory(table= "Admins", action= "start"))
     kb.button(text= "Игры", callback_data= DataBaseCallbackFactory(table= "Games", action= "start"))
-
+    # 2 строка
     kb.button(text= "Вопросы и Действия", callback_data= DataBaseCallbackFactory(table= "Questions_Actions", action= "start"))
-
+    # 3 строка
     kb.button(text= "Вопросы и Действия от игроков", callback_data= DataBaseCallbackFactory(table= "Questions_Actions_From_Gamers", action= "start"))
-    
+    # 4 строка
     kb.button(text= "Ответы", callback_data= DataBaseCallbackFactory(table= "Answers", action= "start"))
     kb.button(text= "Участники", callback_data= DataBaseCallbackFactory(table= "Participates", action= "start"))
-
-    # kb.button(text= "Закрыть базу", callback_data= DataBaseCallbackFactory(table= "all", action= "end"))
-
+    # Отмечаем строки
     kb.adjust(3, 1, 1, 2)
-
-
     return kb
 
 
 # 
 # / Обработчики /
 # 
-
 # Обработчик для начала взаимодействия с базой
 @router.message(Command("db"))
 async def db_handler(message: Message, state: FSMContext):
     await state.clear()
-
     await message.answer(dialog.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
 
 
@@ -105,15 +99,6 @@ async def db_handler2(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(dialog.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
 
-
-
-# Обработчик для закрытия базы
-# @router.callback_query(DataBaseCallbackFactory.filter(F.table == "all" and F.action == "end"))
-# async def admins_handler(callback: CallbackQuery, state: FSMContext):
-#     await state.clear()
-#     await callback.message.edit_text(dialog.take("base_close"))
-    
-    
 
 
 # Обработчик для предоставления команд на взаимодействие с таблицами

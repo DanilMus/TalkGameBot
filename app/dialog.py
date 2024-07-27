@@ -1,20 +1,35 @@
+# 
+# | Файл с текстом, который может выдавать бот |
+# 
+
+# Библиотеки
 from random import randint
 import logging
+
+# Свои модули
+from app import database
 
 logger = logging.getLogger(__name__)
 
 class Dialog():
+    def __init__(self, dialog: dict):
+        self.dialog = dialog
+
+    common = {
+        "error": ["Произошла какая-то ошибка"],
+        "no_rules": ["У вас нет нужных прав для выполнения этой команды"],
+    }
+
     start = {
         "start": ["Привет!", "Рад тебя видеть!", "Круто, что ты здесь!", "Вау, привет!"], 
         "problem": ["Такой команды нет", "Такого действия нет"],
     }
     database_work = {
-        "error": ["Произошла какая-то ошибка"],
         "what_table": ["Выбери с какой таблицей хочешь поработать:"],
         "what_action": ["Что хочешь сделать с таблицей %s"],
         "base_close": ["База закрыта"],
-        "no_rules": ["У вас нет нужных прав для выполнения этой команды"],
     }
+    database_work.update(common)
 
     class game_handlers():
         preparing = {
@@ -42,7 +57,7 @@ class Dialog():
             "read": ["ID: <code>%s</code> \tusername: @%s"],
         }
         gamers.update(common)
-
+        
         admins = {
             "example": ["Укажи ID и username.\nПример: 1 Ivan"],
             "created": ["Админ успешно добавлен"],
@@ -82,11 +97,6 @@ class Dialog():
         }
         participates.update(common)
 
-
-
-    def __init__(self, dialog: dict):
-        self.dialog = dialog
-
     def take(self,  s: str) -> str:
         msg = self.dialog.get(s)
 
@@ -95,4 +105,5 @@ class Dialog():
             return "К сожалению обнаружена проблема с диалогами. Я уже сообщил об этом создателю. Если проблема сохраниться напишите @snecht"
 
         return msg[randint(0, len(msg)-1)]
+    
     

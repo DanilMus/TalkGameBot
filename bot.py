@@ -9,6 +9,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode  
 from aiogram.fsm.strategy import FSMStrategy
 from aiogram.fsm.storage.memory import MemoryStorage # где хранятся состояния
+from aiogram.client.default import DefaultBotProperties
 
 # Конфиг
 from config.config import token
@@ -30,7 +31,7 @@ async def main():
     logger.info("Логирование начало работу")
 
     # Инициализация бота
-    bot = Bot(token= token, parse_mode= ParseMode.HTML)
+    bot = Bot(token= token, default= DefaultBotProperties(parse_mode= ParseMode.HTML))
     dp = Dispatcher(storage= MemoryStorage(), fsm_strategy= FSMStrategy.CHAT)
 
     # Установка команд

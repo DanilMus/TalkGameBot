@@ -16,7 +16,7 @@ from app.handlers.game_hadlers import preparing
 # Переменные для оргиназации работы
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
-dialog = Dialog(Dialog.game) # класс с диалогами
+#dialog = Dialog(Dialog.game) # класс с диалогами
 
 # Ставим Фильтр на действие только внутри групп и супергрупп
 router.message.filter(F.chat.type.in_({"group", "supergroup"})) 
