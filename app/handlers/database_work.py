@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, Awaitable
 from app.dialog import Dialog
 from app.database import DataBase, async_session
 from app.callbacks import DataBaseCallbackFactory
-from app.handlers.database_hadlers import gamers, admins, games, questions_actions, questions_actions_from_gamers, answers, participates
+from app.handlers.database_handlers import gamers, admins, games, questions_actions, questions_actions_from_gamers, answers, participates
 from config import config
 
 

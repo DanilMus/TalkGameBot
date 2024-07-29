@@ -234,9 +234,19 @@ if __name__ == "__main__":
             for gamer in all_gamers:
                 print(f"ID: {gamer.id}, Username: {gamer.username}")
             
+            # Получение списка колонок в таблице
+            attributes = [column.name for column in gamers_db.model.__table__.columns]
+            response = '\n'.join([
+                "ID: %s, Username: %s" % tuple(getattr(gamer, attr) for attr in attributes)
+                for gamer in all_gamers
+            ])
+            print(response)
+
             # Удаление записи
             await gamers_db.delete(id=12345)
             exists = await gamers_db.is_exists(12345)
             print(f"Gamer exists: {exists}")
+
+            
 
     asyncio.run(example_usage())

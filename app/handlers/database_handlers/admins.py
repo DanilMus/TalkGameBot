@@ -9,14 +9,15 @@ from aiogram.types import Message, CallbackQuery, TelegramObject
 from aiogram.fsm.context import FSMContext
 
 import logging
+import os
 from typing import Any, Callable, Dict, Awaitable
 
 # Свои модули
-from app.dialog import Dialog
+from app.messages import Messages
 from app.database import DataBase, async_session
 from app.callbacks import DataBaseCallbackFactory
 from app.states import AdminsStates
-from app.handlers.database_hadlers.database_handlers_base import DatabaseHandlers_Base
+from app.handlers.database_handlers.database_handlers_base import DatabaseHandlers_Base
 from config import config
 
 
@@ -24,8 +25,8 @@ from config import config
 # Переменные для оргиназации работы
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
-dialog = Dialog(Dialog.database_handlers.admins) # текст программы
-admins_handlers = DatabaseHandlers_Base(Model= DataBase.Admins, dialog= dialog)
+messages = Messages(os.path.relpath(__file__)) # текст программы
+admins_handlers = DatabaseHandlers_Base(Model= DataBase.Admins, messages= messages)
 
 
 # Outer-мидлварь на проверку прав доступа главного админа
@@ -39,7 +40,7 @@ class IsCreatorMiddleware(BaseMiddleware):
         user = data["event_from_user"]
         # Если это не админ или не главный админ, то не работаем с этим пользовалетелем
         if user.id != config.creator:
-            await event.answer(dialog.take("no_rules"))
+            await event.answer(messages.take("no_rules"))
             return
         
         return await handler(event, data)
@@ -57,7 +58,7 @@ router.callback_query.outer_middleware(IsCreatorMiddleware())
 # Обработчик для подготовки к добавлению в Admins
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins"), DataBaseCallbackFactory.filter(F.action == "create"))
 async def prepare_create_admins_handler(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer(dialog.take("example"))
+    await callback.message.answer(messages.take("example"))
     await state.set_state(AdminsStates.choosing_create)
 
 # Обработчик на добавление в Admins
@@ -86,7 +87,7 @@ async def read_admins_handler(callback: CallbackQuery):
 # Обработчик для подготовки к обновлению в Admins
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins"), DataBaseCallbackFactory.filter(F.action == "update"))
 async def prepare_update_admins_handler(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer(dialog.take("example"))
+    await callback.message.answer(messages.take("example"))
     await state.set_state(AdminsStates.choosing_update)
 
 # Обработчик на обновление в Admins
@@ -103,7 +104,7 @@ async def update_admins_handler(message: Message):
 # Обработчик для подготовки к удалению в Admins
 @router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins"), DataBaseCallbackFactory.filter(F.action == "delete"))
 async def prepare_delete_admins_handler(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer(dialog.take("example_toDel"))
+    await callback.message.answer(messages.take("example_toDel"))
     await state.set_state(AdminsStates.choosing_delete)
 
 # Обработчик на удаление в Admins

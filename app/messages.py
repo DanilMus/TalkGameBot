@@ -1,9 +1,14 @@
 import json
 import os
+from random import randint
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Messages:
     def __init__(self, handler_path):
         self.messages = self._load(handler_path)
+        self.path = handler_path
 
     def _load(self, handler_path: str) -> dict:
         base_path = "data/messages"
@@ -38,8 +43,19 @@ class Messages:
 
         return messages
     
+    def take(self,  s: str) -> str:
+        msg = self.messages.get(s)
+
+        if not msg:
+            logger.error(f"Не удалось найти диалог у {self.path}[{s}]")
+            return "К сожалению обнаружена проблема с диалогами. Я уже сообщил об этом создателю. Если проблема сохраниться напишите @snecht"
+
+        return msg[randint(0, len(msg)-1)]
+    
 
 if __name__ == "__main__":
+    print(os.path.relpath(__file__)) # Относительный путь файла
+    # Пример работы класса
     handler_path = 'app/handlers/database_handlers/admins.py'
     messages = Messages(handler_path)
     print(messages.messages)

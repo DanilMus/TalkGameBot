@@ -9,7 +9,7 @@ import logging
 
 # Собственные модули
 from app.dialog import Dialog
-from app.handlers.game_hadlers import preparing
+from app.handlers.game_handlers import preparing
 
 
 
