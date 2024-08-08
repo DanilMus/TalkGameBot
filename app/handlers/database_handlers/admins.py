@@ -9,15 +9,13 @@ from aiogram.types import Message, CallbackQuery, TelegramObject
 from aiogram.fsm.context import FSMContext
 
 import logging
-import os
 from typing import Any, Callable, Dict, Awaitable
 
 # Свои модули
 from app.messages import Messages
-from app.database import DataBase, async_session
-from app.callbacks import DataBaseCallbackFactory
+from app.callbacks import DatabaseCallbackFactory
 from app.states import AdminsStates
-from app.handlers.database_handlers.database_handlers_base import DatabaseHandlers_Base
+from app.handlers.database_handlers.database_handlers_base import DatabaseHandlersBase
 from config import config
 
 
@@ -25,8 +23,8 @@ from config import config
 # Переменные для оргиназации работы
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
-messages = Messages(os.path.relpath(__file__)) # текст программы
-admins_handlers = DatabaseHandlers_Base(Model= DataBase.Admins, messages= messages)
+messages = Messages(__file__) # текст программы
+handlers = DatabaseHandlersBase(__file__)
 
 
 # Outer-мидлварь на проверку прав доступа главного админа
@@ -56,16 +54,16 @@ router.callback_query.outer_middleware(IsCreatorMiddleware())
 #
 
 # Обработчик для подготовки к добавлению в Admins
-@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins"), DataBaseCallbackFactory.filter(F.action == "create"))
-async def prepare_create_admins_handler(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "create"))
+async def prepare_create_Admins_handler(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(messages.take("example"))
     await state.set_state(AdminsStates.choosing_create)
 
 # Обработчик на добавление в Admins
 @router.message(AdminsStates.choosing_create)
-async def create_admins_handler(message: Message):
+async def create_Admins_handler(message: Message):
     id, username = message.text.split()
-    await admins_handlers.create_handler(message, id= id, username= username)
+    await handlers.create_handler(message, id= id, username= username)
 
 
 
@@ -74,9 +72,9 @@ async def create_admins_handler(message: Message):
 # 
 
 # Обработчик на чтение Admins
-@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins"), DataBaseCallbackFactory.filter(F.action == "read"))
-async def read_admins_handler(callback: CallbackQuery):
-    await admins_handlers.read_hadler(callback)
+@router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "read"))
+async def read_Admins_handler(callback: CallbackQuery):
+    await handlers.read_hadler(callback)
 
 
 
@@ -85,16 +83,16 @@ async def read_admins_handler(callback: CallbackQuery):
 # 
 
 # Обработчик для подготовки к обновлению в Admins
-@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins"), DataBaseCallbackFactory.filter(F.action == "update"))
-async def prepare_update_admins_handler(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "update"))
+async def prepare_update_Admins_handler(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(messages.take("example"))
     await state.set_state(AdminsStates.choosing_update)
 
 # Обработчик на обновление в Admins
 @router.message(AdminsStates.choosing_update)
-async def update_admins_handler(message: Message):
+async def update_Admins_handler(message: Message):
     id, username = message.text.split()
-    await admins_handlers.update_handler(message, id= id, username= username)
+    await handlers.update_handler(message, id= id, username= username)
 
 
 # 
@@ -102,12 +100,12 @@ async def update_admins_handler(message: Message):
 # 
 
 # Обработчик для подготовки к удалению в Admins
-@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Admins"), DataBaseCallbackFactory.filter(F.action == "delete"))
-async def prepare_delete_admins_handler(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "delete"))
+async def prepare_delete_Admins_handler(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(messages.take("example_toDel"))
     await state.set_state(AdminsStates.choosing_delete)
 
 # Обработчик на удаление в Admins
 @router.message(AdminsStates.choosing_delete)
-async def delete_admins_handler(message: Message):
-    await admins_handlers.delete_handler(message)
+async def delete_Admins_handler(message: Message):
+    await handlers.delete_handler(message)

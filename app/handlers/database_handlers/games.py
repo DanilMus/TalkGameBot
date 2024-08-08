@@ -10,18 +10,15 @@ from aiogram.types import CallbackQuery
 import logging
 
 # свои модули
-from app.dialog import Dialog
-from app.database_ import DataBase
-from app.callbacks import DataBaseCallbackFactory
+from app.callbacks import DatabaseCallbackFactory
+from app.handlers.database_handlers.database_handlers_base import DatabaseHandlersBase
 
 
 
 # Переменные для оргиназации работы
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
-dialog = Dialog(Dialog.database_handlers.games) # текст программы
-
-
+handlers = DatabaseHandlersBase(__file__)
 
 
 # 
@@ -29,13 +26,6 @@ dialog = Dialog(Dialog.database_handlers.games) # текст программы
 # 
 
 # Обработчик на чтение Games
-@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Games"), DataBaseCallbackFactory.filter(F.action == "read"))
-async def read_games_handler(callback: CallbackQuery):
-    async with DataBase.Games() as games:
-        games = await games.read()
-
-    if not games: # Проверка на пустоту и выполнения запроса
-        return await callback.message.answer(dialog.take("base_empty"))
-
-    response = '\n'.join([dialog.take("read") % game for game in games])
-    await callback.message.answer(response)
+@router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "read"))
+async def read_Games_handler(callback: CallbackQuery):
+    await handlers.read_hadler(callback)

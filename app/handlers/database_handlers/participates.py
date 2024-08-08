@@ -10,16 +10,15 @@ from aiogram.types import CallbackQuery
 import logging
 
 # свои модули
-from app.dialog import Dialog
-from app.database_ import DataBase
-from app.callbacks import DataBaseCallbackFactory
+from app.callbacks import DatabaseCallbackFactory
+from app.handlers.database_handlers.database_handlers_base import DatabaseHandlersBase
 
 
 
 # Переменные для оргиназации работы
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
-dialog = Dialog(Dialog.database_handlers.participates) # текст программы
+handlers = DatabaseHandlersBase(__file__)
 
 
 # 
@@ -27,13 +26,6 @@ dialog = Dialog(Dialog.database_handlers.participates) # текст програ
 # 
 
 # Обработчик на чтение Participates
-@router.callback_query(DataBaseCallbackFactory.filter(F.table == "Participates"), DataBaseCallbackFactory.filter(F.action == "read"))
-async def read_Participates_handler(callback: CallbackQuery):
-    async with DataBase.Participates() as participates:
-        participates = await participates.read()
-
-    if not participates: # Проверка на пустоту и выполнения запроса
-        return await callback.message.answer(dialog.take("base_empty"))
-
-    response = '\n'.join([dialog.take("read") % partipate for partipate in participates])
-    await callback.message.answer(response)
+@router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "read"))
+async def read_participates_handler(callback: CallbackQuery):
+    await handlers.read_hadler(callback)

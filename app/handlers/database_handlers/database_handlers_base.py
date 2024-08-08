@@ -1,6 +1,8 @@
 from aiogram.types import Message, CallbackQuery
 
 import logging
+import os
+import inspect
 
 # Cвои модули
 from app.database import DataBase, async_session
@@ -9,10 +11,15 @@ from app.messages import Messages
 # Переменные для оргиназации работы
 logger = logging.getLogger(__name__) # логирование событий
 
-class DatabaseHandlers_Base:
-    def __init__(self, Model: DataBase, messages: Messages):
-        self.Model = Model
-        self.messages = messages
+class DatabaseHandlersBase:
+    def __init__(self, for_file):
+        self.messages = Messages(for_file)
+
+        filename = os.path.basename(for_file)
+        model_name = os.path.splitext(filename)[0].capitalize()
+        self.Model = getattr(DataBase, model_name)
+
+        self.table_name = model_name 
         
     
     #

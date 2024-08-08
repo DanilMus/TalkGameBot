@@ -3,17 +3,21 @@ import os
 from random import randint
 import logging
 
+# Свои модули
+from config import config
+
 logger = logging.getLogger(__name__)
 
 class Messages:
-    def __init__(self, handler_path):
-        self.messages = self._load(handler_path)
-        self.path = handler_path
+    def __init__(self, file: str):
+        handler_relpath = os.path.relpath(file)
+        self.messages = self._load(handler_relpath)
+        self.path = handler_relpath
 
     def _load(self, handler_path: str) -> dict:
         base_path = "data/messages"
         
-        # Строим относительный путь от base_path до hadler_path
+        # Строим относительный путь отностельно handlers_path
         # (Допустим, handler_path = 'app/handlers/database_handlers/admin.py', то получить должны rel_path = database_handlers/admin.py)
         rel_path = os.path.relpath(handler_path,  "app/handlers")
 
@@ -25,6 +29,7 @@ class Messages:
 
         # Проходим по компонентам и загружаем common.json
         # (В common.json хранятся базовые сообщения)
+        # (И чем дальше заходим вглубь папок, тем больше файлов common будем собирать)
         current_path = base_path
         for part in path_parts:
             common_path = os.path.join(current_path, "common.json")

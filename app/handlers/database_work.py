@@ -15,7 +15,7 @@ from typing import Any, Callable, Dict, Awaitable
 # свои модули
 from app.dialog import Dialog
 from app.database import DataBase, async_session
-from app.callbacks import DataBaseCallbackFactory
+from app.callbacks import DatabaseCallbackFactory
 from app.handlers.database_handlers import gamers, admins, games, questions_actions, questions_actions_from_gamers, answers, participates
 from config import config
 
@@ -68,16 +68,16 @@ def kb_for_db_handler() -> InlineKeyboardBuilder:
     kb = InlineKeyboardBuilder()
 
     # 1 строка
-    kb.button(text= "Игроки", callback_data= DataBaseCallbackFactory(table= "Gamers", action= "start"))
-    kb.button(text= "Админы", callback_data= DataBaseCallbackFactory(table= "Admins", action= "start"))
-    kb.button(text= "Игры", callback_data= DataBaseCallbackFactory(table= "Games", action= "start"))
+    kb.button(text= "Игроки", callback_data= DatabaseCallbackFactory(table= "Gamers", action= "start"))
+    kb.button(text= "Админы", callback_data= DatabaseCallbackFactory(table= "Admins", action= "start"))
+    kb.button(text= "Игры", callback_data= DatabaseCallbackFactory(table= "Games", action= "start"))
     # 2 строка
-    kb.button(text= "Вопросы и Действия", callback_data= DataBaseCallbackFactory(table= "Questions_Actions", action= "start"))
+    kb.button(text= "Вопросы и Действия", callback_data= DatabaseCallbackFactory(table= "Questions_Actions", action= "start"))
     # 3 строка
-    kb.button(text= "Вопросы и Действия от игроков", callback_data= DataBaseCallbackFactory(table= "Questions_Actions_From_Gamers", action= "start"))
+    kb.button(text= "Вопросы и Действия от игроков", callback_data= DatabaseCallbackFactory(table= "Questions_Actions_From_Gamers", action= "start"))
     # 4 строка
-    kb.button(text= "Ответы", callback_data= DataBaseCallbackFactory(table= "Answers", action= "start"))
-    kb.button(text= "Участники", callback_data= DataBaseCallbackFactory(table= "Participates", action= "start"))
+    kb.button(text= "Ответы", callback_data= DatabaseCallbackFactory(table= "Answers", action= "start"))
+    kb.button(text= "Участники", callback_data= DatabaseCallbackFactory(table= "Participates", action= "start"))
     # Отмечаем строки
     kb.adjust(3, 1, 1, 2)
     return kb
@@ -94,7 +94,7 @@ async def db_handler(message: Message, state: FSMContext):
 
 
 # Обработчик при нажатии кнопки "Назад"
-@router.callback_query(DataBaseCallbackFactory.filter(F.table == "all" and F.action == "begin"))
+@router.callback_query(DatabaseCallbackFactory.filter(F.table == "all" and F.action == "begin"))
 async def db_handler2(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(dialog.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
@@ -102,22 +102,22 @@ async def db_handler2(callback: CallbackQuery, state: FSMContext):
 
 
 # Обработчик для предоставления команд на взаимодействие с таблицами
-@router.callback_query(DataBaseCallbackFactory.filter(F.action == "start"))
-async def admins_handler(callback: CallbackQuery, callback_data: DataBaseCallbackFactory, state: FSMContext):
+@router.callback_query(DatabaseCallbackFactory.filter(F.action == "start"))
+async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory, state: FSMContext):
     await state.clear()
     table = callback_data.table
 
     kb = InlineKeyboardBuilder()
     if table == "Admins" or table == "Questions_Actions": # Только у этих таблиц есть возможность редактирования
-        kb.button(text= "Добавить", callback_data= DataBaseCallbackFactory(table= table, action= "create"))
-        kb.button(text= "Прочитать", callback_data= DataBaseCallbackFactory(table= table, action= "read"))
-        kb.button(text= "Обновить", callback_data= DataBaseCallbackFactory(table= table, action= "update"))
-        kb.button(text= "Удалить", callback_data= DataBaseCallbackFactory(table= table, action= "delete"))
-        kb.button(text= "Назад", callback_data= DataBaseCallbackFactory(table= "all", action= "begin"))
+        kb.button(text= "Добавить", callback_data= DatabaseCallbackFactory(table= table, action= "create"))
+        kb.button(text= "Прочитать", callback_data= DatabaseCallbackFactory(table= table, action= "read"))
+        kb.button(text= "Обновить", callback_data= DatabaseCallbackFactory(table= table, action= "update"))
+        kb.button(text= "Удалить", callback_data= DatabaseCallbackFactory(table= table, action= "delete"))
+        kb.button(text= "Назад", callback_data= DatabaseCallbackFactory(table= "all", action= "begin"))
         kb.adjust(4)
     else:
-        kb.button(text= "Прочитать", callback_data= DataBaseCallbackFactory(table= table, action= "read"))
-        kb.button(text= "Назад", callback_data= DataBaseCallbackFactory(table= "all", action= "begin"))
+        kb.button(text= "Прочитать", callback_data= DatabaseCallbackFactory(table= table, action= "read"))
+        kb.button(text= "Назад", callback_data= DatabaseCallbackFactory(table= "all", action= "begin"))
 
     
     await callback.message.edit_text(dialog.take("what_action") % table, reply_markup= kb.as_markup())
