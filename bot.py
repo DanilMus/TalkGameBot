@@ -17,7 +17,7 @@ from config.config import token
 # Обработчики
 from app.handlers import start
 from app.handlers import database_work
-from app.handlers import game
+# from app.handlers import game
 
 
 
@@ -44,7 +44,7 @@ async def main():
     # Включение обработчиков
     dp.include_routers(
         database_work.router,
-        game.router,
+        # game.router,
         start.router,
     )
 

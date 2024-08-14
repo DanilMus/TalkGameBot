@@ -16,7 +16,7 @@ class DatabaseHandlersBase:
         self.messages = Messages(for_file)
 
         filename = os.path.basename(for_file)
-        model_name = os.path.splitext(filename)[0].capitalize()
+        model_name = "_".join([el.capitalize() for el in os.path.splitext(filename)[0].split("_")])
         self.Model = getattr(DataBase, model_name)
 
         self.table_name = model_name 
