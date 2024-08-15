@@ -10,7 +10,7 @@ from abc import ABC # Для создания абстрактных класс�
 from datetime import datetime
 
 # Свои модули
-from config import config
+from config import config_reader
 
 
 logger = logging.getLogger(__name__) # логирование событий
@@ -27,10 +27,10 @@ class DataBase():
         # Подключение и отключение автоматически и ассинхронно с использованием with
         async def __aenter__(self):
             try:
-                self.connection = mysql.connector.connect(user= config.db_user, 
-                                                                password= config.db_password,
-                                                                host= config.db_host,
-                                                                database=config.db_name,
+                self.connection = mysql.connector.connect(user= config_reader.db_user, 
+                                                                password= config_reader.db_password,
+                                                                host= config_reader.db_host,
+                                                                database=config_reader.db_name,
                                                                 charset= "utf8")
                 self.cursor = self.connection.cursor()
                 return self

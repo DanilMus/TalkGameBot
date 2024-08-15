@@ -4,9 +4,9 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.future import select
 from datetime import datetime
 import logging
-from config import config
+from config.config_reader import config
 
-DATABASE_URL = f"mysql+aiomysql://{config.db_user}:{config.db_password}@{config.db_host}/{config.db_name}"
+DATABASE_URL = f"mysql+aiomysql://{config.db_user.get_secret_value()}:{config.db_password.get_secret_value()}@{config.db_host.get_secret_value()}/{config.db_name.get_secret_value()}"
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 Base = declarative_base()

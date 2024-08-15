@@ -3,9 +3,6 @@ import os
 from random import randint
 import logging
 
-# Свои модули
-from config import config
-
 logger = logging.getLogger(__name__)
 
 class Messages:

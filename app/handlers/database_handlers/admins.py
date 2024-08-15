@@ -16,7 +16,7 @@ from app.messages import Messages
 from app.callbacks import DatabaseCallbackFactory
 from app.states import AdminsStates
 from app.handlers.database_handlers.database_handlers_base import DatabaseHandlersBase
-from config import config
+from config.config_reader import config
 
 
 
@@ -37,7 +37,7 @@ class IsCreatorMiddleware(BaseMiddleware):
     ) -> Any:
         user = data["event_from_user"]
         # Если это не админ или не главный админ, то не работаем с этим пользовалетелем
-        if user.id != config.creator:
+        if user.id != config.id_owner.get_secret_value():
             await event.answer(messages.take("no_rules"))
             return
         

@@ -17,7 +17,7 @@ from app.dialog import Dialog
 from app.database import DataBase, async_session
 from app.callbacks import DatabaseCallbackFactory
 from app.handlers.database_handlers import admins, answers, gamers, games, participates, questions_actions, questions_actions_from_gamers
-from config import config
+from config.config_reader import config
 
 
 # Переменные для оргиназации работы
@@ -51,7 +51,7 @@ class IsAdminMiddleware(BaseMiddleware):
             admins_db = DataBase.Admins(session)
             # Если это не админ или не главный админ, то не работаем с этим пользовалетелем
             # (еще можно заметить, что можно использовать 2 способа достать id пользователя)
-            if not await admins_db.is_exists(user.id) and event.from_user.id != config.creator:
+            if not await admins_db.is_exists(user.id) and event.from_user.id != config.id_owner.get_secret_value():
                 await event.answer(dialog.take("no_rules"))
                 return
         
