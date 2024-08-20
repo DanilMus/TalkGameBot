@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, Awaitable
 
 # Свои модули
 from app.messages import Messages
-from app.callbacks import DatabaseCallbackFactory
+from app.callbacks_factories import DatabaseCallbackFactory
 from app.states import AdminsStates
 from app.handlers.database_handlers.database_handlers_base import DatabaseHandlersBase
 from config.config_reader import config
@@ -27,7 +27,7 @@ messages = Messages(__file__) # текст программы
 handlers = DatabaseHandlersBase(__file__)
 
 
-# Outer-мидлварь на проверку прав доступа главного админа
+# Мидлварь на проверку прав доступа главного админа
 class IsCreatorMiddleware(BaseMiddleware):
     async def __call__(
             self,
@@ -36,15 +36,16 @@ class IsCreatorMiddleware(BaseMiddleware):
             data: Dict[str, Any]
     ) -> Any:
         user = data["event_from_user"]
-        # Если это не админ или не главный админ, то не работаем с этим пользовалетелем
+        
+        # Если это не главный админ, то не работаем с этим пользовалетелем
         if user.id != config.id_owner.get_secret_value():
             await event.answer(messages.take("no_rules"))
             return
         
         return await handler(event, data)
 
-router.message.outer_middleware(IsCreatorMiddleware())
-router.callback_query.outer_middleware(IsCreatorMiddleware())
+router.message.middleware(IsCreatorMiddleware())
+router.callback_query.middleware(IsCreatorMiddleware())
         
 
 

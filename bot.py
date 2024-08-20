@@ -17,7 +17,7 @@ from config.config_reader import config
 # Обработчики
 from app.handlers import start
 from app.handlers import database_work
-# from app.handlers import game
+from app.handlers import game
 
 
 
@@ -43,9 +43,10 @@ async def main():
     
     # Включение обработчиков
     dp.include_routers(
-        database_work.router,
-        # game.router,
-        start.router,
+        game.router, # Здесь все обработчики игры
+        
+        database_work.router, # А здесь все обработчики базы данных
+        start.router, # Просто начальная информация о боте
     )
 
     # Начало работы

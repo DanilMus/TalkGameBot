@@ -12,7 +12,7 @@ import logging
 
 # Свои модули
 from app.messages import Messages
-from app.callbacks import DatabaseCallbackFactory
+from app.callbacks_factories import DatabaseCallbackFactory
 from app.states import Questions_ActionsStates
 from app.handlers.database_handlers.database_handlers_base import DatabaseHandlersBase
 

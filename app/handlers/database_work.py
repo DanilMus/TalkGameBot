@@ -12,10 +12,11 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 import logging
 from typing import Any, Callable, Dict, Awaitable
 
+
 # свои модули
-from app.dialog import Dialog
+from app.messages import Messages
 from app.database import DataBase, async_session
-from app.callbacks import DatabaseCallbackFactory
+from app.callbacks_factories import DatabaseCallbackFactory
 from app.handlers.database_handlers import admins, answers, gamers, games, participates, questions_actions, questions_actions_from_gamers
 from config.config_reader import config
 
@@ -23,21 +24,17 @@ from config.config_reader import config
 # Переменные для оргиназации работы
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
-dialog = Dialog(Dialog.database_work) # текст программы
-# Подключение роутеров на обработку CRUD у различных таблиц
-router.include_routers(
-    gamers.router,
-    admins.router,
-    games.router,
-    questions_actions.router,
-    questions_actions_from_gamers.router,
-    answers.router,
-    participates.router,
-)
+messages = Messages(__file__) # текст программы
 
 
 
-# Outer-мидлварь на проверку прав доступа
+# Ставим Фильтр на действие только внутри частных чатов
+router.message.filter(F.chat.type == "private") 
+router.callback_query.filter(F.message.chat.type == "private") 
+
+
+
+# Мидлварь на проверку прав доступа
 class IsAdminMiddleware(BaseMiddleware):
     async def __call__(
             self,
@@ -49,18 +46,36 @@ class IsAdminMiddleware(BaseMiddleware):
 
         async with async_session() as session:
             admins_db = DataBase.Admins(session)
-            # Если это не админ или не главный админ, то не работаем с этим пользовалетелем
+            # Если это админ или главный админ, то работаем с этим пользовалетелем
             # (еще можно заметить, что можно использовать 2 способа достать id пользователя)
-            if not await admins_db.is_exists(user.id) and event.from_user.id != config.id_owner.get_secret_value():
-                await event.answer(dialog.take("no_rules"))
-                return
-        
-        return await handler(event, data)
-# Подключение этой мидлвари на сообщения и на колбэки
-router.message.outer_middleware(IsAdminMiddleware())
-router.callback_query.outer_middleware(IsAdminMiddleware())
+            if await admins_db.is_exists(user.id) or event.from_user.id == config.id_owner.get_secret_value():
+                return await handler(event, data)
+     
+        await event.answer(messages.take("no_rules"))
+        return
+    
+    
+# Подключение этой внутренней мидлвари на сообщения и на колбэки
+router.message.middleware(IsAdminMiddleware())
+router.callback_query.middleware(IsAdminMiddleware())
 
 
+
+# 
+# / Обработчики /
+# 
+# Обработчик для начала взаимодействия с базой
+@router.message(Command("db"))
+async def db_handler(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(messages.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
+
+
+# Обработчик при нажатии кнопки "Назад"
+@router.callback_query(DatabaseCallbackFactory.filter(F.table == "all" and F.action == "begin"))
+async def db_handler2(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text(messages.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
 
 
 # Клавиатура для обработчиков db_handler и db_handler2
@@ -83,27 +98,11 @@ def kb_for_db_handler() -> InlineKeyboardBuilder:
     return kb
 
 
-# 
-# / Обработчики /
-# 
-# Обработчик для начала взаимодействия с базой
-@router.message(Command("db"))
-async def db_handler(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer(dialog.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
-
-
-# Обработчик при нажатии кнопки "Назад"
-@router.callback_query(DatabaseCallbackFactory.filter(F.table == "all" and F.action == "begin"))
-async def db_handler2(callback: CallbackQuery, state: FSMContext):
-    await state.clear()
-    await callback.message.edit_text(dialog.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
-
-
 
 # Обработчик для предоставления команд на взаимодействие с таблицами
 @router.callback_query(DatabaseCallbackFactory.filter(F.action == "start"))
 async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory, state: FSMContext):
+    logger.error(callback.message.chat.type)
     await state.clear()
     table = callback_data.table
 
@@ -120,4 +119,17 @@ async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbac
         kb.button(text= "Назад", callback_data= DatabaseCallbackFactory(table= "all", action= "begin"))
 
     
-    await callback.message.edit_text(dialog.take("what_action") % table, reply_markup= kb.as_markup())
+    await callback.message.edit_text(messages.take("what_action") % table, reply_markup= kb.as_markup())
+
+
+
+# Подключение роутеров на обработку CRUD у различных таблиц
+router.include_routers(
+    gamers.router,
+    games.router,
+    questions_actions.router,
+    questions_actions_from_gamers.router,
+    answers.router,
+    participates.router,
+    admins.router,
+)

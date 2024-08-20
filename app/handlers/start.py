@@ -11,18 +11,23 @@ from aiogram.fsm.context import FSMContext
 import logging
 
 # Общение с пользователем
-from app.dialog import Dialog
+from app.messages import Messages
 from app.database import async_session, DataBase
 
 
 # Переменные для оргиназации работы
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
-dialog = Dialog(Dialog.start) # класс с диалогами
+messages = Messages(__file__) # класс с диалогами
 
 
 
-# Обработчик на команду start
+# Ставим Фильтр на действие только внутри частных чатов
+router.message.filter(F.chat.type == "private") 
+router.callback_query.filter(F.chat.type == "private") 
+
+
+# Обработчик на банальное начало всего
 @router.message(Command("start"))
 async def start_handler(message: Message, state: FSMContext):
     # Добавляем нового игрока в базу, если его нет
@@ -33,10 +38,16 @@ async def start_handler(message: Message, state: FSMContext):
 
     await state.clear() # сбрасываение состояний
 
-    await message.answer(dialog.take("start"))
+    await message.answer(messages.take("start"))
+
+# Обработчик на доп инфу
+@router.message(Command("info"))
+async def start_handler(message: Message, state: FSMContext):
+    await state.clear() # сбрасываение состояний
+    await message.answer(messages.take("info"))
 
 # Обрабочик ситуации, когда игрок посылает что-то не в тему
-@router.message(F.text)
-async def problem_handler(message: Message, state: FSMContext):
-    await message.answer(dialog.take("problem"))
+# @router.message(F.text)
+# async def problem_handler(message: Message, state: FSMContext):
+#     await message.answer(messages.take("problem"))
 

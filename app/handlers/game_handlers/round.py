@@ -15,7 +15,7 @@ import logging
 # Собственные модули
 from app.dialog import Dialog
 from app.database_ import DataBase
-from app.callbacks import GameCallBackFactory
+from app.callbacks_factories import GameCallBackFactory
 from app.states import GameStates
 
 

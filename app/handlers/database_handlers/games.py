@@ -10,7 +10,7 @@ from aiogram.types import CallbackQuery
 import logging
 
 # свои модули
-from app.callbacks import DatabaseCallbackFactory
+from app.callbacks_factories import DatabaseCallbackFactory
 from app.handlers.database_handlers.database_handlers_base import DatabaseHandlersBase
 
 
