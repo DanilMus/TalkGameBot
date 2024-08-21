@@ -12,5 +12,5 @@ class DatabaseCallbackFactory(CallbackData, prefix= "db"):
     action: str
 
 # Класс для управления колбэками в game
-class GameCallBackFactory(CallbackData, prefix= "game"):
+class GameCallbackFactory(CallbackData, prefix= "game"):
     action: str

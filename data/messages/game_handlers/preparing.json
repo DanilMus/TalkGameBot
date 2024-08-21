@@ -6,7 +6,7 @@
     "problem": ["Сожалею, ничем не могу помочь"],
     "problem_with_rounds_text": ["Введите целое число, пожалуйста"],
     "problem_with_rounds_int": ["Введите число от 0 до %s"],
-    "problem_with_participants": ["Игроков должно быть больше 1"],
+    "problem_with_participants": ["Игроков должно быть не меньше 2 для участия"],
     "starting_game": ["Что ж начнем нашу игру!"],
     "new_participant": ["@%s присоединился к игре"]
 }

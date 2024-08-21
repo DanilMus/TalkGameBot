@@ -18,7 +18,7 @@ router = Router() # маршрутизатор
 
 # Ставим Фильтр на действие только внутри групп и супергрупп
 router.message.filter(F.chat.type.in_({"group", "supergroup"})) 
-router.callback_query.filter(F.chat.type.in_({"group", "supergroup"})) 
+router.callback_query.filter(F.message.chat.type.in_({"group", "supergroup"})) 
 
 
 # Подключение маршрутизаторов из папки game_handlers

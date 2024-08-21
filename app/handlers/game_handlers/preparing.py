@@ -17,7 +17,7 @@ import logging
 # Собственные модули
 from app.messages import Messages
 from app.database import DataBase, async_session
-from app.callbacks_factories import GameCallBackFactory
+from app.callbacks_factories import GameCallbackFactory
 from app.states import GameStates
 
 
@@ -26,10 +26,6 @@ from app.states import GameStates
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
 messages = Messages(__file__) # класс с диалогами
-
-# Ставим Фильтр на действие только внутри групп и супергрупп
-router.message.filter(F.chat.type.in_({"group", "supergroup"})) 
-router.callback_query.filter(F.chat.type.in_({"group", "supergroup"})) 
 
 # Фильтр на владельца чата
 class IsChatOwnerFilter(BaseFilter):
@@ -64,7 +60,7 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
     await state.clear() # сбрасываение состояний
 
     kb = InlineKeyboardBuilder()
-    kb.button(text= "Я", callback_data= GameCallBackFactory(action= "i"))
+    kb.button(text= "Я", callback_data= GameCallbackFactory(action= "i_will"))
 
     kb2 = ReplyKeyboardBuilder()
     kb2.button(text= "Закончили")
@@ -76,11 +72,13 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
 
 
 # Обработчик на участвующих (тех, кто нажал на |Я| и теперь участвует в игре)
-@router.callback_query(GameCallBackFactory.filter(F.action == "i"))
+@router.callback_query(StateFilter(GameStates.choosing_participants), GameCallbackFactory.filter(F.action == "i_will"))
 async def choosing_participants_handler(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
+
     if not data["participants"].get(callback.from_user.full_name, False):
         data["participants"][callback.from_user.username] = 0
+        await state.update_data(participants= data["participants"])
         await callback.message.answer(messages.take("new_participant") % callback.from_user.username)
 
 
