@@ -40,8 +40,10 @@ async def prepare_create_Questions_Actions_handler(callback: CallbackQuery, stat
 # Обработчик на добавление в Questions_Actions
 @router.message(Questions_ActionsStates.choosing_create)
 async def create_Questions_Actions_handler(message: Message):
-    id, username = message.text.split()
-    await handlers.create_handler(message, id= id, username= username)
+    id_admin = message.from_user.id
+    question_or_action, category, question_action = message.text.split("_")
+    id, question_or_action = int(id), bool(int(question_or_action))
+    await handlers.create_handler(message, id_admin= id_admin, question_or_action= question_or_action, category= category, question_action= question_action)
 
 
 
@@ -63,14 +65,16 @@ async def read_Questions_Actions_handler(callback: CallbackQuery):
 # Обработчик для подготовки к обновлению в Questions_Actions
 @router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "update"))
 async def prepare_update_Questions_Actions_handler(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer(messages.take("example"))
+    await callback.message.answer(messages.take("example_toUpdate"))
     await state.set_state(Questions_ActionsStates.choosing_update)
 
 # Обработчик на обновление в Questions_Actions
 @router.message(Questions_ActionsStates.choosing_update)
 async def update_Questions_Actions_handler(message: Message):
-    id, username = message.text.split()
-    await handlers.update_handler(message, id= id, username= username)
+    id_admin = message.from_user.id
+    id, question_or_action, category, question_action = message.text.split("_")
+    id, question_or_action = int(id), bool(int(question_or_action))
+    await handlers.update_handler(message, id= id, id_admin= id_admin, question_or_action= question_or_action, category= category, question_action= question_action)
 
 
 # 

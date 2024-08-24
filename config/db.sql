@@ -39,7 +39,7 @@ CREATE TABLE Questions_Actions (
     -- Сторонние 
     id_admin BIGINT,
     -- Внутренние
-    questions_or_actions BOOLEAN, -- вопрос - 0, действие - 1
+    question_or_action BOOLEAN, -- вопрос - 0, действие - 1
     category VARCHAR(127), -- категория задания
     question_action TEXT, -- текст вопроса или действия
 

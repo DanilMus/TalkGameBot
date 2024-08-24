@@ -34,7 +34,7 @@ class QuestionAction(Base):
     __tablename__ = "Questions_Actions"
     id = Column(Integer, primary_key=True, index=True)
     id_admin = Column(Integer, ForeignKey('Admins.id'))
-    questions_or_actions = Column(Boolean)
+    question_or_action = Column(Boolean)
     category = Column(String(127))
     question_action = Column(String, unique=True)
     admin = relationship("Admin")
@@ -114,11 +114,14 @@ class DataBase:
                         result = await session.execute(select(self.model).where(self.model.id == id))
                         instance = result.scalars().first()
                         if instance:
+                            # Обновление существующего объекта
                             for key, value in kwargs.items():
                                 setattr(instance, key, value)
                             session.add(instance)
                         else:
+                            logger.error(f"Запись с id={id} не найдена.")
                             return None
+                        
                     await session.commit()
                     return instance
             except Exception as ex:
@@ -176,11 +179,12 @@ class DataBase:
         async def rounds(self, count_members: int):
             try:
                 async with self.session as session:
-                    result_false = await session.execute(select(self.model).where(self.model.questions_or_actions == False))
-                    count_false = result_false.scalars().count()
-                    result_true = await session.execute(select(self.model).where(self.model.questions_or_actions == True))
-                    count_true = result_true.scalars().count()
-                    return int(min(count_false, count_true) / count_members)
+                    result_false = await session.execute(select(self.model).where(self.model.question_or_action == False))
+                    count_questions = len(result_false.scalars().all())
+                    result_true = await session.execute(select(self.model).where(self.model.question_or_action == True))
+                    count_actions = len(result_true.scalars().all())
+                    logger.error(f"{count_questions} {count_actions}")
+                    return int(min(count_questions, count_actions) / count_members)
             except Exception as ex:
                 logger.error(f"Ошибка расчета количества раундов в таблице {self.model.__tablename__}: {ex}")
                 return 0
@@ -188,9 +192,9 @@ class DataBase:
         async def questions_actions(self):
             try:
                 async with self.session() as session:
-                    result_false = await session.execute(select(self.model).where(self.model.questions_or_actions == False))
+                    result_false = await session.execute(select(self.model).where(self.model.question_or_action == False))
                     questions = [elem.question_action for elem in result_false.scalars().all()]
-                    result_true = await session.execute(select(self.model).where(self.model.questions_or_actions == True))
+                    result_true = await session.execute(select(self.model).where(self.model.question_or_action == True))
                     actions = [elem.question_action for elem in result_true.scalars().all()]
                     return {"question": questions, "action": actions}
             except Exception as ex:

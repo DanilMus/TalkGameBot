@@ -75,10 +75,9 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
 @router.callback_query(StateFilter(GameStates.choosing_participants), GameCallbackFactory.filter(F.action == "i_will"))
 async def choosing_participants_handler(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-
-    if not data["participants"].get(callback.from_user.full_name, False):
-        data["participants"][callback.from_user.username] = 0
-        await state.update_data(participants= data["participants"])
+    
+    if not data["participants"].get(callback.from_user.username, False):
+        data["participants"][callback.from_user.username] = True
         await callback.message.answer(messages.take("new_participant") % callback.from_user.username)
 
 
@@ -91,13 +90,13 @@ async def ending_choosing_participants_handler(message: Message, state: FSMConte
         questions_actions = DataBase.Questions_Actions(session)
         members = len(data["participants"])
         rounds = await questions_actions.rounds(members)
+        
+        if members < 2:
+            return await message.answer((messages.take("problem_with_participants")))
 
-    if members < 2:
-        return await message.answer((messages.take("problem_with_participants")))
-
-    if rounds:
-        await state.update_data(rounds= rounds)
-        return await message.answer(messages.take("start") % str(rounds))
-    
-    await message.answer(messages.take("problem_withRounds"))
-    logger.info(f"Не удалось провести игру, слишком много людей: {members}")
+        if rounds:
+            await state.update_data(rounds= rounds)
+            return await message.answer(messages.take("start") % str(rounds))
+        
+        await message.answer(messages.take("problem_withRounds"))
+        logger.info(f"Не удалось провести игру, слишком много людей: {members}")
