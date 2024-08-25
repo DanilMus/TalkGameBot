@@ -74,6 +74,7 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
 # Обработчик на участвующих (тех, кто нажал на |Я| и теперь участвует в игре)
 @router.callback_query(StateFilter(GameStates.choosing_participants), GameCallbackFactory.filter(F.action == "i_will"))
 async def choosing_participants_handler(callback: CallbackQuery, state: FSMContext):
+    callback.answer() # чтобы игрок увидел, что кнопка пошла в обработку
     data = await state.get_data()
     
     if not data["participants"].get(callback.from_user.username, False):
