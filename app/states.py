@@ -20,3 +20,5 @@ class Questions_ActionsStates(StatesGroup):
 # Состояния папки game
 class GameStates(StatesGroup):
     choosing_participants = State()
+    choosing_rounds = State()
+    starting_game = State()

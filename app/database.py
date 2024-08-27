@@ -1,9 +1,18 @@
+# 
+# | Файл для работы с БД |
+# 
+
+# Библиотеки
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.future import select
+
 from datetime import datetime
 import logging
+import random
+
+# Свои модули
 from config.config_reader import config
 
 DATABASE_URL = f"mysql+aiomysql://{config.db_user.get_secret_value()}:{config.db_password.get_secret_value()}@{config.db_host.get_secret_value()}/{config.db_name.get_secret_value()}"
@@ -176,30 +185,34 @@ class DataBase:
         def __init__(self, session):
             super().__init__(session, QuestionAction)
 
-        async def rounds(self, count_members: int):
+        async def count_max_rounds(self, count_members: int):
             try:
                 async with self.session as session:
                     result_false = await session.execute(select(self.model).where(self.model.question_or_action == False))
                     count_questions = len(result_false.scalars().all())
                     result_true = await session.execute(select(self.model).where(self.model.question_or_action == True))
                     count_actions = len(result_true.scalars().all())
-                    logger.error(f"{count_questions} {count_actions}")
                     return int(min(count_questions, count_actions) / count_members)
             except Exception as ex:
                 logger.error(f"Ошибка расчета количества раундов в таблице {self.model.__tablename__}: {ex}")
                 return 0
 
-        async def questions_actions(self):
+
+        async def make_rounds(self, num_rounds: int):
             try:
                 async with self.session() as session:
                     result_false = await session.execute(select(self.model).where(self.model.question_or_action == False))
                     questions = [elem.question_action for elem in result_false.scalars().all()]
+                    questions = random.sample(questions, num_rounds)
+
                     result_true = await session.execute(select(self.model).where(self.model.question_or_action == True))
                     actions = [elem.question_action for elem in result_true.scalars().all()]
-                    return {"question": questions, "action": actions}
+                    actions = random.sample(actions, num_rounds)
+
+                    return {"questions": questions, "actions": actions}
             except Exception as ex:
                 logger.error(f"Ошибка получения вопросов и действий из таблицы {self.model.__tablename__}: {ex}")
-                return {"question": [], "action": []}
+                return None
 
     class Questions_Actions_From_Gamers(__Base):
         def __init__(self, session):

@@ -82,7 +82,7 @@ async def choosing_participants_handler(callback: CallbackQuery, state: FSMConte
         await callback.message.answer(messages.take("new_participant") % callback.from_user.username)
 
 
-# Обработчик на окончание в игре
+# Обработчик на окончание выбора игроков, которые будут учавствовать, в игре
 @router.message(IsChatOwnerFilter(), StateFilter(GameStates.choosing_participants), F.text.lower() == "закончили")
 async def ending_choosing_participants_handler(message: Message, state: FSMContext):
     data = await state.get_data()
@@ -90,14 +90,47 @@ async def ending_choosing_participants_handler(message: Message, state: FSMConte
     async with async_session() as session:
         questions_actions = DataBase.Questions_Actions(session)
         members = len(data["participants"])
-        rounds = await questions_actions.rounds(members)
+        max_rounds = await questions_actions.count_max_rounds(members)
         
+        # Если игроков недостаточно
         if members < 2:
             return await message.answer((messages.take("problem_with_participants")))
 
-        if rounds:
-            await state.update_data(rounds= rounds)
-            return await message.answer(messages.take("start") % str(rounds))
-        
-        await message.answer(messages.take("problem_withRounds"))
-        logger.info(f"Не удалось провести игру, слишком много людей: {members}")
+        # Если не удастся организовать ни один раунд
+        if max_rounds == 0:
+            logger.info(f"Не удалось провести игру, слишком много людей: {members}")
+            await message.answer(messages.take("problem_withRounds"))
+        # Если раунды есть, заносим их макс кол-во
+        await state.update_data(rounds= max_rounds)
+
+        # Клавиатура для быстрого ответа на кол-во раундов
+        kb = ReplyKeyboardBuilder()
+        for i in range(1, max_rounds + 1):
+            if i > 7:
+                break
+            kb.button(text= str(i))
+        await message.answer(messages.take("start") % max_rounds, reply_markup= kb.as_markup(resize_keyboard= True))    
+
+        await state.set_state(GameStates.choosing_rounds)
+    
+
+
+# Обработчик на кол-во раундов, которое будет выбрано
+@router.message(IsChatOwnerFilter(), StateFilter(GameStates.choosing_rounds), F.text.isdigit())
+async def choosing_rounds_handler(message: Message, state: FSMContext):
+    data = await state.get_data()
+
+    if not(0 < int(message.text) <= data["rounds"]):
+        return message.answer(messages.take("problem_with_rounds_int") % data["rounds"])
+
+    data["rounds"] = int(message.text.strip())
+    async with async_session() as session:
+        questions_actions = DataBase.Questions_Actions(session)
+        data["questions_actions"] = questions_actions.make_rounds(data["rounds"])
+
+    kb = InlineKeyboardBuilder()
+    kb.button(text= "Погнали!", callback_data= GameCallbackFactory(action= "lets_go"))
+    await message.answer(messages.take("starting_game"), reply_markup= kb.as_markup())
+
+    await state.set_state(GameStates.starting_game)
+    
