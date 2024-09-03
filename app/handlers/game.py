@@ -8,7 +8,7 @@ from aiogram import F, Router
 import logging
 
 # Собственные модули
-from app.handlers.game_handlers import preparing
+from app.handlers.game_handlers import preparing, round
 
 
 
@@ -23,5 +23,6 @@ router.callback_query.filter(F.message.chat.type.in_({"group", "supergroup"}))
 
 # Подключение маршрутизаторов из папки game_handlers
 router.include_routers(
-    preparing.router
+    preparing.router,
+    round.router
 )

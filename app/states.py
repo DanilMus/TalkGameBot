@@ -21,4 +21,4 @@ class Questions_ActionsStates(StatesGroup):
 class GameStates(StatesGroup):
     choosing_participants = State()
     choosing_rounds = State()
-    starting_game = State()
+    starting_round = State()

@@ -13,4 +13,9 @@ class DatabaseCallbackFactory(CallbackData, prefix= "db"):
 
 # Класс для управления колбэками в game
 class GameCallbackFactory(CallbackData, prefix= "game"):
-    action: str
+    step: str
+    question_or_action: bool
+    no_or_yes: bool
+
+    question_or_action = False
+    no_or_yes = False

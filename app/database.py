@@ -209,7 +209,7 @@ class DataBase:
                     actions = [elem.question_action for elem in result_true.scalars().all()]
                     actions = random.sample(actions, num_rounds)
 
-                    return {"questions": questions, "actions": actions}
+                    return {False: questions, True: actions}
             except Exception as ex:
                 logger.error(f"Ошибка получения вопросов и действий из таблицы {self.model.__tablename__}: {ex}")
                 return None

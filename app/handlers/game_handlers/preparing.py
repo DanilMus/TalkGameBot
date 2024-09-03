@@ -60,7 +60,7 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
     await state.clear() # сбрасываение состояний
 
     kb = InlineKeyboardBuilder()
-    kb.button(text= "Я", callback_data= GameCallbackFactory(action= "i_will"))
+    kb.button(text= "Я", callback_data= GameCallbackFactory(step= "i_will"))
 
     kb2 = ReplyKeyboardBuilder()
     kb2.button(text= "Закончили")
@@ -72,13 +72,13 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
 
 
 # Обработчик на участвующих (тех, кто нажал на |Я| и теперь участвует в игре)
-@router.callback_query(StateFilter(GameStates.choosing_participants), GameCallbackFactory.filter(F.action == "i_will"))
+@router.callback_query(StateFilter(GameStates.choosing_participants), GameCallbackFactory.filter(F.step == "i_will"))
 async def choosing_participants_handler(callback: CallbackQuery, state: FSMContext):
     callback.answer() # чтобы игрок увидел, что кнопка пошла в обработку
     data = await state.get_data()
     
-    if not data["participants"].get(callback.from_user.username, False):
-        data["participants"][callback.from_user.username] = True
+    if data["participants"].get(callback.from_user.username, True):
+        data["participants"][callback.from_user.username] = 0
         await callback.message.answer(messages.take("new_participant") % callback.from_user.username)
 
 
@@ -129,8 +129,10 @@ async def choosing_rounds_handler(message: Message, state: FSMContext):
         data["questions_actions"] = questions_actions.make_rounds(data["rounds"])
 
     kb = InlineKeyboardBuilder()
-    kb.button(text= "Погнали!", callback_data= GameCallbackFactory(action= "lets_go"))
+    kb.button(text= "Погнали!", callback_data= GameCallbackFactory(step= "starting_round"))
     await message.answer(messages.take("starting_game"), reply_markup= kb.as_markup())
 
     await state.set_state(GameStates.starting_game)
-    
+    data["whos_turn_i"] = 0
+    data["whos_turn"] = data["participants"].keys()[data["whos_turn_i"]]
+    data["round"] = 1

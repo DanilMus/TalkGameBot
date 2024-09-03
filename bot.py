@@ -67,6 +67,7 @@ async def main():
 
     # Начало работы
     logger.info("Бот начал работу")
+    # То, какие апдейты будут приниматься в allowed_updates
     await dp.start_polling(bot, allowed_updates=["message", "inline_query", "chat_member", "my_chat_member", "callback_query"])
     logger.info("Бот закончил работу")
 
