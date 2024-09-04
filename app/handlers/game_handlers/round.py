@@ -30,6 +30,7 @@ messages = Messages(__file__) # класс с диалогами
 class AnswerOfWhosTurnFilter(BaseFilter):
     async def __call__(self, callback: CallbackQuery, state: FSMContext):
         data = await state.get_data()
+        logger.error(data)
         return callback.from_user.username == data["whos_turn"]
 
 class AnswerOfOthersTurnFilter(BaseFilter):
@@ -44,8 +45,8 @@ class AnswerOfOthersTurnFilter(BaseFilter):
 @router.callback_query(GameCallbackFactory.filter(F.step == "starting_round"), StateFilter(GameStates.starting_round))
 async def starting_round_handler(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    callback.message.answer(messages.take("starting_round") % data["round"])
-    question_or_action_handler(callback, state)
+    await callback.message.answer(messages.take("starting_round") % data["round"])
+    await question_or_action_handler(callback, state)
 
 
 async def question_or_action_handler(callback: CallbackQuery, state: FSMContext):
@@ -55,7 +56,7 @@ async def question_or_action_handler(callback: CallbackQuery, state: FSMContext)
     kb.button("Вопрос", callback_data= GameCallbackFactory(step= "question_action", question_or_action= False))
     kb.button("Действие", callback_data= GameCallbackFactory(step= "question_action", question_or_action= True))
 
-    callback.message.answer(messages.take("question_or_action") % data["whos_turn"], reply_markup= kb.as_markup())
+    await callback.message.answer(messages.take("question_or_action") % data["whos_turn"], reply_markup= kb.as_markup())
 
 
 
@@ -66,7 +67,7 @@ async def question_action_handler(callback: CallbackQuery, callback_data: GameCa
     kb = InlineKeyboardBuilder()
     kb.button("Закончил/а", callback_data= GameCallbackFactory(step= f"end_question_action", question_or_action= callback_data.question_or_action))
 
-    callback.message.edit_text(messages.take(callback_data.step) % (data["whos_turn"], data["questions_actions"][callback_data.question_or_action].pop()), reply_markup= kb.as_markup(kb))
+    await callback.message.edit_text(messages.take(callback_data.step) % (data["whos_turn"], data["questions_actions"][callback_data.question_or_action].pop()), reply_markup= kb.as_markup(kb))
 
 
 @router.callback_query(AnswerOfWhosTurnFilter(), GameCallbackFactory.filter(F.step == "end_question_action"), StateFilter(GameStates.starting_round))
@@ -77,14 +78,15 @@ async def end_question_action_handler(callback: CallbackQuery, callback_data: Ga
     kb.button("Да", callback_data= GameCallbackFactory(step= "no_yes_question_action", no_or_yes= True))
     kb.button("Нет", callback_data= GameCallbackFactory(step= "no_yes_question_action", no_or_yes= False))
 
-    callback.message.edit_text(messages.take(f"end_{("question", "action")[callback_data.question_or_action]}" % (data["whos_turn"])), reply_markup= kb.as_markup())
+    await callback.message.edit_text(messages.take(f"end_{("question", "action")[callback_data.question_or_action]}" % (data["whos_turn"])), reply_markup= kb.as_markup())
     # Создаем пустой список, в котором будут те, кто ответил на Да и Нет
     data["others_turn"] = []
+    state.update_data(data)
 
 
 @router.callback_query(AnswerOfOthersTurnFilter, GameCallbackFactory.filter(F.step == "no_yes_question_action"), StateFilter(GameStates.starting_round))
 async def no_yes_question_action_handler(callback: CallbackQuery, callback_data: GameCallbackFactory, state: FSMContext):
-    callback.answer(messages.take(callback_data.step) % callback.from_user.username)
+    await callback.answer(messages.take(callback_data.step) % callback.from_user.username)
 
     data = await state.get_data()
     data["others_turn"].append(callback.from_user.username)
@@ -93,13 +95,13 @@ async def no_yes_question_action_handler(callback: CallbackQuery, callback_data:
         data["whos_turn_i"] += 1
 
         if data["whos_turn_i"] < len(data["participants"]): # Если еще есть кому участвовать, продолжаем раунд
-            data["whos_turn"] = data["participants"].keys()[data["whos_turn_i"]]
-            question_or_action_handler(callback, state)
+            data["whos_turn"] = next(data["whos_turn_iter"])
+            await question_or_action_handler(callback, state)
         elif data["round"] + 1 <= data["rounds"]: # Если некому участвовать, то начинаем новый раунд
             data["round"] += 1
-            starting_round_handler(callback, state)
+            await starting_round_handler(callback, state)
         else: # Если же некому участвовать и всее раунды закончились, то заканчиваем игру
-            end_game_handler(callback, state)
+            await end_game_handler(callback, state)
 
 
 async def end_game_handler(callback: CallbackQuery, state: FSMContext):
@@ -112,4 +114,4 @@ async def end_game_handler(callback: CallbackQuery, state: FSMContext):
         ans += messages.take("end_game_2") % (i, gamer, points)
         
 
-    callback.message.answer(ans)
+    await callback.message.answer(ans)

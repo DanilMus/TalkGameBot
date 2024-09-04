@@ -74,7 +74,6 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
 # Обработчик на участвующих (тех, кто нажал на |Я| и теперь участвует в игре)
 @router.callback_query(StateFilter(GameStates.choosing_participants), GameCallbackFactory.filter(F.step == "i_will"))
 async def choosing_participants_handler(callback: CallbackQuery, state: FSMContext):
-    callback.answer() # чтобы игрок увидел, что кнопка пошла в обработку
     data = await state.get_data()
     
     if data["participants"].get(callback.from_user.username, True):
@@ -121,7 +120,7 @@ async def choosing_rounds_handler(message: Message, state: FSMContext):
     data = await state.get_data()
 
     if not(0 < int(message.text) <= data["rounds"]):
-        return message.answer(messages.take("problem_with_rounds_int") % data["rounds"])
+        return await message.answer(messages.take("problem_with_rounds_int") % data["rounds"])
 
     data["rounds"] = int(message.text.strip())
     async with async_session() as session:
@@ -132,7 +131,8 @@ async def choosing_rounds_handler(message: Message, state: FSMContext):
     kb.button(text= "Погнали!", callback_data= GameCallbackFactory(step= "starting_round"))
     await message.answer(messages.take("starting_game"), reply_markup= kb.as_markup())
 
-    await state.set_state(GameStates.starting_game)
-    data["whos_turn_i"] = 0
-    data["whos_turn"] = data["participants"].keys()[data["whos_turn_i"]]
+    await state.set_state(GameStates.starting_round)
+    data["whos_turn_iter"] = iter(data["participants"])
+    data["whos_turn"] = next(data["whos_turn_iter"])
     data["round"] = 1
+    await state.update_data(data)

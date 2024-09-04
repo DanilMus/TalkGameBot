@@ -51,8 +51,9 @@ async def main():
 
     # Установка команд
     commands = [
+        types.BotCommand(command= "/game", description= "Игра"),
         types.BotCommand(command= "/start", description= "Начало работы"),
-        types.BotCommand(command= "/game", description= "Начало игры"),
+        types.BotCommand(command= "/info", description= "Справка"),
     ]
     await bot.set_my_commands(commands)
     
