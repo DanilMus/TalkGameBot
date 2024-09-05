@@ -125,7 +125,7 @@ async def choosing_rounds_handler(message: Message, state: FSMContext):
     data["rounds"] = int(message.text.strip())
     async with async_session() as session:
         questions_actions = DataBase.Questions_Actions(session)
-        data["questions_actions"] = questions_actions.make_rounds(data["rounds"])
+        data["questions_actions"] = await questions_actions.make_rounds(data["rounds"], len(data["participants"]))
 
     kb = InlineKeyboardBuilder()
     kb.button(text= "Погнали!", callback_data= GameCallbackFactory(step= "starting_round"))

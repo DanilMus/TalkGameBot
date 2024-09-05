@@ -45,7 +45,7 @@ class AnswerOfOthersTurnFilter(BaseFilter):
 @router.callback_query(GameCallbackFactory.filter(F.step == "starting_round"), StateFilter(GameStates.starting_round))
 async def starting_round_handler(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    await callback.message.answer(messages.take("starting_round") % data["round"])
+    await callback.message.edit_text(messages.take("starting_round") % data["round"])
     await question_or_action_handler(callback, state)
 
 
@@ -53,8 +53,8 @@ async def question_or_action_handler(callback: CallbackQuery, state: FSMContext)
     data = await state.get_data()
 
     kb = InlineKeyboardBuilder()
-    kb.button("Вопрос", callback_data= GameCallbackFactory(step= "question_action", question_or_action= False))
-    kb.button("Действие", callback_data= GameCallbackFactory(step= "question_action", question_or_action= True))
+    kb.button(text= "Вопрос", callback_data= GameCallbackFactory(step= "question_action", question_or_action= False))
+    kb.button(text= "Действие", callback_data= GameCallbackFactory(step= "question_action", question_or_action= True))
 
     await callback.message.answer(messages.take("question_or_action") % data["whos_turn"], reply_markup= kb.as_markup())
 
@@ -65,9 +65,9 @@ async def question_action_handler(callback: CallbackQuery, callback_data: GameCa
     data = await state.get_data()
 
     kb = InlineKeyboardBuilder()
-    kb.button("Закончил/а", callback_data= GameCallbackFactory(step= f"end_question_action", question_or_action= callback_data.question_or_action))
+    kb.button(text= "Закончил/а", callback_data= GameCallbackFactory(step= f"end_question_action", question_or_action= callback_data.question_or_action))
 
-    await callback.message.edit_text(messages.take(callback_data.step) % (data["whos_turn"], data["questions_actions"][callback_data.question_or_action].pop()), reply_markup= kb.as_markup(kb))
+    await callback.message.edit_text(messages.take(callback_data.step) % (data["whos_turn"], data["questions_actions"][callback_data.question_or_action].pop()), reply_markup= kb.as_markup())
 
 
 @router.callback_query(AnswerOfWhosTurnFilter(), GameCallbackFactory.filter(F.step == "end_question_action"), StateFilter(GameStates.starting_round))
@@ -75,10 +75,10 @@ async def end_question_action_handler(callback: CallbackQuery, callback_data: Ga
     data = await state.get_data()
 
     kb= InlineKeyboardBuilder()
-    kb.button("Да", callback_data= GameCallbackFactory(step= "no_yes_question_action", no_or_yes= True))
-    kb.button("Нет", callback_data= GameCallbackFactory(step= "no_yes_question_action", no_or_yes= False))
+    kb.button(text= "Да", callback_data= GameCallbackFactory(step= "no_yes_question_action", no_or_yes= True))
+    kb.button(text= "Нет", callback_data= GameCallbackFactory(step= "no_yes_question_action", no_or_yes= False))
 
-    await callback.message.edit_text(messages.take(f"end_{("question", "action")[callback_data.question_or_action]}" % (data["whos_turn"])), reply_markup= kb.as_markup())
+    await callback.message.edit_text(messages.take(f"end_{("question", "action")[callback_data.question_or_action]}" % data["whos_turn"]), reply_markup= kb.as_markup())
     # Создаем пустой список, в котором будут те, кто ответил на Да и Нет
     data["others_turn"] = []
     state.update_data(data)

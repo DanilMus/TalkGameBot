@@ -198,16 +198,16 @@ class DataBase:
                 return 0
 
 
-        async def make_rounds(self, num_rounds: int):
+        async def make_rounds(self, num_rounds: int, num_participants: int):
             try:
-                async with self.session() as session:
+                async with self.session as session:
                     result_false = await session.execute(select(self.model).where(self.model.question_or_action == False))
                     questions = [elem.question_action for elem in result_false.scalars().all()]
-                    questions = random.sample(questions, num_rounds)
+                    questions = random.sample(questions, num_rounds*num_participants)
 
                     result_true = await session.execute(select(self.model).where(self.model.question_or_action == True))
                     actions = [elem.question_action for elem in result_true.scalars().all()]
-                    actions = random.sample(actions, num_rounds)
+                    actions = random.sample(actions, num_rounds*num_participants)
 
                     return {False: questions, True: actions}
             except Exception as ex:
