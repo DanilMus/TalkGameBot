@@ -50,7 +50,7 @@ async def game_handler(event: ChatMemberUpdated, state: FSMContext):
 
 
 # Обработчик на команду game, т.е. на самое главное - начало игры
-@router.message(IsChatOwnerFilter(), Command("game"))
+@router.message(Command("game"))
 async def game_handler(message: Message, state: FSMContext):
     await starting_choosing_participants_handler(message, state)
 
@@ -82,7 +82,7 @@ async def choosing_participants_handler(callback: CallbackQuery, state: FSMConte
 
 
 # Обработчик на окончание выбора игроков, которые будут учавствовать, в игре
-@router.message(IsChatOwnerFilter(), StateFilter(GameStates.choosing_participants), F.text.lower() == "закончили")
+@router.message(StateFilter(GameStates.choosing_participants), IsChatOwnerFilter(), F.text.lower() == "закончили")
 async def ending_choosing_participants_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     
@@ -115,7 +115,7 @@ async def ending_choosing_participants_handler(message: Message, state: FSMConte
 
 
 # Обработчик на кол-во раундов, которое будет выбрано
-@router.message(IsChatOwnerFilter(), StateFilter(GameStates.choosing_rounds), F.text.isdigit())
+@router.message(StateFilter(GameStates.choosing_rounds), IsChatOwnerFilter(), F.text.isdigit())
 async def choosing_rounds_handler(message: Message, state: FSMContext):
     data = await state.get_data()
 
