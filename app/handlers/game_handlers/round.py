@@ -4,7 +4,7 @@
 
 # Библиотеки
 from aiogram import F, Router
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.filters import Command, BaseFilter, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
@@ -95,17 +95,21 @@ async def no_yes_question_action_handler(callback: CallbackQuery, callback_data:
 
     data = await state.get_data()
     data["others_turn"].append(callback.from_user.username)
+    data["participants"][callback.from_user.username] += callback_data.no_or_yes
+    await state.set_data(data)
 
     # Если собрали все ответы, от всех игроков, кроме того, чья очередь
     if len(data["others_turn"]) == len(data["participants"]) - 1:
+        await callback.message.edit_text(messages.take("end_"+callback_data.step))
         try:
-            data["whos_turn"] = next(data["whos_turn_iter"])
+            await state.update_data(whos_turn= next(data["whos_turn_iter"]))
             await question_or_action_handler(callback, state)
         except StopIteration: # если больше некого брать в итераторе
             if data["round"] + 1 <= data["rounds"]: # Если некому участвовать, то начинаем новый раунд
                 data["whos_turn_iter"] = iter(data["participants"])
                 data["whos_turn"] = next(data["whos_turn_iter"])
                 data["round"] += 1
+                await state.set_data(data)
                 await starting_round_handler(callback, state)
             else: # Если же некому участвовать и всее раунды закончились, то заканчиваем игру
                 await end_game_handler(callback, state)

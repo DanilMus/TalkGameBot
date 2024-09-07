@@ -135,4 +135,4 @@ async def choosing_rounds_handler(message: Message, state: FSMContext):
     data["whos_turn_iter"] = iter(data["participants"])
     data["whos_turn"] = next(data["whos_turn_iter"])
     data["round"] = 1
-    await state.update_data(data)
+    await state.set_data(data)
