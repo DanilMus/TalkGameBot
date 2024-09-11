@@ -42,7 +42,7 @@ async def prepare_create_Questions_Actions_handler(callback: CallbackQuery, stat
 async def create_Questions_Actions_handler(message: Message):
     id_admin = message.from_user.id
     question_or_action, category, question_action = message.text.split("_")
-    id, question_or_action = int(id), bool(int(question_or_action))
+    question_or_action = bool(int(question_or_action))
     await handlers.create_handler(message, id_admin= id_admin, question_or_action= question_or_action, category= category, question_action= question_action)
 
 

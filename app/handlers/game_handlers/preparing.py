@@ -4,7 +4,7 @@
 
 # Библиотеки
 from aiogram import F, Router
-from aiogram.types import Message, ChatMemberUpdated, CallbackQuery
+from aiogram.types import Message, ChatMemberUpdated, CallbackQuery, TelegramObject
 from aiogram.filters import Command, BaseFilter, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
@@ -29,9 +29,12 @@ messages = Messages(__file__) # класс с диалогами
 
 # Фильтр на владельца чата
 class IsChatOwnerFilter(BaseFilter):
-    async def __call__(self, message: Message):
-        member = await message.chat.get_member(message.from_user.id)
-
+    async def __call__(self, event: TelegramObject):
+        if event is Message:
+            member = await event.chat.get_member(event.from_user.id)
+        else:
+            member = await event.message.chat.get_member(event.from_user.id)
+        
         return member.status is ChatMemberStatus.CREATOR
 
     
@@ -61,12 +64,10 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
 
     kb = InlineKeyboardBuilder()
     kb.button(text= "Я", callback_data= GameCallbackFactory(step= "i_will"))
-
-    kb2 = ReplyKeyboardBuilder()
-    kb2.button(text= "Закончили")
+    kb.button(text= "Закончили", callback_data= GameCallbackFactory(step= "ending_choosing"))
+    kb.adjust(1)
     
     await message_or_event.answer(messages.take("participants"), reply_markup= kb.as_markup())
-    await message_or_event.answer(messages.take("participants_chosen"), reply_markup= kb2.as_markup(resize_keyboard= True))
     await state.update_data(participants= {})
     await state.set_state(GameStates.choosing_participants)
 
@@ -82,8 +83,9 @@ async def choosing_participants_handler(callback: CallbackQuery, state: FSMConte
 
 
 # Обработчик на окончание выбора игроков, которые будут учавствовать, в игре
-@router.message(StateFilter(GameStates.choosing_participants), IsChatOwnerFilter(), F.text.lower() == "закончили")
-async def ending_choosing_participants_handler(message: Message, state: FSMContext):
+@router.callback_query(StateFilter(GameStates.choosing_participants), IsChatOwnerFilter(), GameCallbackFactory.filter(F.step == "ending_choosing"))
+async def ending_choosing_participants_handler(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(messages.take("ending_choosing"))
     data = await state.get_data()
     
     async with async_session() as session:
@@ -93,12 +95,12 @@ async def ending_choosing_participants_handler(message: Message, state: FSMConte
         
         # Если игроков недостаточно
         if members < 2:
-            return await message.answer((messages.take("problem_with_participants")))
+            return await callback.message.edit_text((messages.take("problem_with_participants")))
 
         # Если не удастся организовать ни один раунд
         if max_rounds == 0:
             logger.info(f"Не удалось провести игру, слишком много людей: {members}")
-            await message.answer(messages.take("problem_withRounds"))
+            return await callback.message.edit_text(messages.take("problem_withRounds"))
         # Если раунды есть, заносим их макс кол-во
         await state.update_data(rounds= max_rounds)
 
@@ -108,7 +110,7 @@ async def ending_choosing_participants_handler(message: Message, state: FSMConte
             if i > 7:
                 break
             kb.button(text= str(i))
-        await message.answer(messages.take("start") % max_rounds, reply_markup= kb.as_markup(resize_keyboard= True))    
+        await callback.message.answer(messages.take("start") % max_rounds, reply_markup= kb.as_markup(resize_keyboard= True))    
 
         await state.set_state(GameStates.choosing_rounds)
     
@@ -120,7 +122,7 @@ async def choosing_rounds_handler(message: Message, state: FSMContext):
     data = await state.get_data()
 
     if not(0 < int(message.text) <= data["rounds"]):
-        return await message.answer(messages.take("problem_with_rounds_int") % data["rounds"])
+        return await message.edit_text(messages.take("problem_with_rounds_int") % data["rounds"])
 
     data["rounds"] = int(message.text.strip())
     async with async_session() as session:
@@ -129,7 +131,7 @@ async def choosing_rounds_handler(message: Message, state: FSMContext):
 
     kb = InlineKeyboardBuilder()
     kb.button(text= "Погнали!", callback_data= GameCallbackFactory(step= "starting_round"))
-    await message.answer(messages.take("starting_game"), reply_markup= kb.as_markup())
+    await message.edit_text(messages.take("starting_game"), reply_markup= kb.as_markup())
 
     await state.set_state(GameStates.starting_round)
     data["whos_turn_iter"] = iter(data["participants"])
