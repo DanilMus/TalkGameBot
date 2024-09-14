@@ -40,7 +40,8 @@ class DatabaseHandlersBase:
     async def read_hadler(self, callback: CallbackQuery):
         async with async_session() as session:
             table_db = self.Model(session)
-            table_data = await table_db.read_all()
+            end_id = await table_db.end_id()
+            table_data = await table_db.read_from_to(end_id, end_id-5)
 
             if not table_data: # Проверка на пустоту
                 return await callback.message.answer(self.messages.take("base_empty"))

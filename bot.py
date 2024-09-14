@@ -1,6 +1,5 @@
-# 
-# | Файл настройки бота |
-# 
+"""| Файл настройки бота |"""
+ 
 
 # Библиотеки
 from aiogram import Bot, Dispatcher, types, BaseMiddleware
@@ -44,6 +43,7 @@ async def main():
         format= "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     )
     logger.info("Логирование начало работу")
+    
 
     # Инициализация бота
     bot = Bot(token= config.bot_token.get_secret_value(), default= DefaultBotProperties(parse_mode= ParseMode.HTML))

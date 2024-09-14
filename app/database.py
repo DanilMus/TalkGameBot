@@ -1,8 +1,6 @@
-# 
-# | Файл для работы с БД |
-# 
+"""| Файл для работы с БД |"""
 
-# Библиотеки
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
@@ -15,14 +13,22 @@ import random
 # Свои модули
 from config.config_reader import config
 
-DATABASE_URL = f"mysql+aiomysql://{config.db_user.get_secret_value()}:{config.db_password.get_secret_value()}@{config.db_host.get_secret_value()}/{config.db_name.get_secret_value()}"
 
-engine = create_async_engine(DATABASE_URL, echo=True)
+"""Переменные для работы"""
+# Настройка создания подключения к базе
+DATABASE_URL = f"mysql+aiomysql://{config.db_user.get_secret_value()}:{config.db_password.get_secret_value()}@{config.db_host.get_secret_value()}/{config.db_name.get_secret_value()}"
+engine = create_async_engine(DATABASE_URL, echo= False)
 Base = declarative_base()
+# Переменная, через которую будет производиться подключение к базе
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
-logger = logging.getLogger(__name__)
+# Настройка логирования
+logger = logging.getLogger("sqlalchemy.engine")
+logger.propagate = False # удаление дублирования
+logger.setLevel(logging.INFO)
 
+
+"""Классы в виде представления классов SQL"""
 class Gamer(Base):
     __tablename__ = "Gamers"
     id = Column(Integer, primary_key=True, index=True)
@@ -80,6 +86,8 @@ class Participate(Base):
     game = relationship("Game")
     gamer = relationship("Gamer")
 
+
+"""Главный класс для взаимодействия с базой"""
 class DataBase:
     class __Base:
         def __init__(self, session, model):
@@ -115,6 +123,26 @@ class DataBase:
             except Exception as ex:
                 logger.error(f"Ошибка чтения всех записей из таблицы {self.model.__tablename__}: {ex}")
                 return []
+        
+        # Метод выдачи эл-тов с from_id по to_id (выдача идет как по возрастанию так и по убыванию, смотря, как укажешь)
+        async def read_from_to(self, from_id, to_id):
+            try:
+                async with self.session as session:
+                    if from_id < to_id:
+                        # Если from_id меньше to_id, то выбираем по возрастанию
+                        result = await session.execute(
+                            select(self.model).where(self.model.id >= from_id, self.model.id <= to_id).order_by(self.model.id.asc())
+                        )
+                    else:
+                        # Если from_id больше to_id, то выбираем по убыванию
+                        result = await session.execute(
+                            select(self.model).where(self.model.id <= from_id, self.model.id >= to_id).order_by(self.model.id.desc())
+                        )
+                    return result.scalars().all()
+            except Exception as ex:
+                logger.error(f"Ошибка чтения записей из таблицы {self.model.__tablename__} с {from_id} до {to_id}: {ex}")
+                return []
+
 
         async def update(self, id, **kwargs):
             try:
@@ -153,7 +181,8 @@ class DataBase:
             except Exception as ex:
                 logger.error(f"Ошибка удаления записи из таблицы {self.model.__tablename__}: {ex}")
                 return None
-            
+        
+        # Метод проверки, есть ли запись с таким id в таблице
         async def is_exists(self, id):
             try:
                 async with self.session as session:
@@ -162,6 +191,20 @@ class DataBase:
             except Exception as ex:
                 logger.error(f"Ошибка проверки наличия записи в таблице {self.model.__tablename__}: {ex}")
                 return False
+        
+        # Метод выдачи конечного существующего id в таблицеы
+        async def end_id(self):
+            try:
+                async with self.session as session:
+                    result = await session.execute(
+                        select(self.model.id).order_by(self.model.id.desc()).limit(1)
+                    )
+                    last_id = result.scalar()
+                    return last_id
+            except Exception as ex:
+                logger.error(f"Ошибка получения последнего id из таблицы {self.model.__tablename__}: {ex}")
+                return None
+
 
     class Gamers(__Base):
         def __init__(self, session):
@@ -233,7 +276,7 @@ class DataBase:
             return await self.create(id_game=id_game, id_gamer=id_gamer, connection_or_disconnection=True, timing=datetime.now())
 
 
-# Пример использования базы данных
+"""Пример использования базы данных"""
 if __name__ == "__main__":
     import asyncio
 

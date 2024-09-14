@@ -1,8 +1,6 @@
-# 
-# | Файл с обработчиками запуска игры и подсчета тех, кто будет участвовать |
-# 
+"""| Файл с обработчиками запуска игры и подсчета тех, кто будет участвовать |"""
 
-# Библиотеки
+
 from aiogram import F, Router
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.filters import Command, BaseFilter, StateFilter
@@ -17,16 +15,14 @@ from app.callbacks_factories import GameCallbackFactory
 from app.states import GameStates
 
 
-#
-# Переменные для оргиназации работы
-#
+"""Переменные для оргиназации работы"""
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
 messages = Messages(__file__) # класс с диалогами
 
-# 
-# Фильтры
-# 
+
+
+"""Фильтры"""
 # Фильтр для просмотра, что отвечает тот, чья очередь
 class AnswerOfWhosTurnFilter(BaseFilter):
     async def __call__(self, callback: CallbackQuery, state: FSMContext):
@@ -40,9 +36,7 @@ class AnswerOfOthersTurnFilter(BaseFilter):
         return callback.from_user.username != data["whos_turn"]
 
 
-# 
-# Обработчики 
-# 
+"""Обработчики""" 
 # Самое начало, где пишется какой раунд и где происходит перенос к выбору вопроса или действия
 @router.callback_query(StateFilter(GameStates.starting_round), GameCallbackFactory.filter(F.step == "starting_round"))
 async def starting_round_handler(callback: CallbackQuery, state: FSMContext):
@@ -95,7 +89,7 @@ async def no_yes_question_action_handler(callback: CallbackQuery, callback_data:
 
     data = await state.get_data()
     data["others_turn"].append(callback.from_user.username)
-    data["participants"][callback.from_user.username] += callback_data.no_or_yes
+    data["participants"][data["whos_turn"]] += callback_data.no_or_yes
     await state.set_data(data)
 
     # Если собрали все ответы, от всех игроков, кроме того, чья очередь

@@ -102,7 +102,6 @@ def kb_for_db_handler() -> InlineKeyboardBuilder:
 # Обработчик для предоставления команд на взаимодействие с таблицами
 @router.callback_query(DatabaseCallbackFactory.filter(F.action == "start"))
 async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory, state: FSMContext):
-    logger.error(callback.message.chat.type)
     await state.clear()
     table = callback_data.table
 
