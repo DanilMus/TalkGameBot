@@ -1,12 +1,17 @@
+
+
+
 from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import logging
 import os
-import inspect
 
 # Cвои модули
 from app.database import DataBase, async_session
 from app.messages import Messages
+from app.callbacks_factories import DatabaseCallbackFactory
 
 # Переменные для оргиназации работы
 logger = logging.getLogger(__name__) # логирование событий
@@ -37,11 +42,11 @@ class DatabaseHandlersBase:
     # 
     # | Read |
     # 
-    async def read_hadler(self, callback: CallbackQuery):
+    async def read_hadler(self, callback: CallbackQuery, callback_data: DatabaseCallbackFactory):
         async with async_session() as session:
             table_db = self.Model(session)
             end_id = await table_db.end_id()
-            table_data = await table_db.read_from_to(end_id, end_id-5)
+            table_data = await table_db.read_from_to( end_id - 5*callback_data.read_page, end_id - max(await table_db.start_id(), 5*(callback_data.read_page+1)) ) # Выдает элементы по 5 на каждое сообщение
 
             if not table_data: # Проверка на пустоту
                 return await callback.message.answer(self.messages.take("base_empty"))
@@ -52,7 +57,14 @@ class DatabaseHandlersBase:
                 self.messages.take("read") % tuple(getattr(data, attr) for attr in attributes)
                 for data in table_data
             ])
-            await callback.message.answer(response)
+
+            keyboard = InlineKeyboardBuilder()
+            if callback_data.read_page > 0:
+                keyboard.button(text= "<", callback_data= DatabaseCallbackFactory(table= callback_data.table, action= callback_data.action, read_page= callback_data.read_page-1))
+            if (callback_data.read_page+1)*5 < await table_db.length():
+                keyboard.button(text= ">", callback_data= DatabaseCallbackFactory(table= callback_data.table, action= callback_data.action,  read_page= callback_data.read_page+1))
+
+            await callback.message.edit_text(response, reply_markup= keyboard.as_markup())
 
     # 
     # | Update |

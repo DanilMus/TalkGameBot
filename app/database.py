@@ -3,7 +3,7 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, func
 from sqlalchemy.future import select
 
 from datetime import datetime
@@ -192,6 +192,19 @@ class DataBase:
                 logger.error(f"Ошибка проверки наличия записи в таблице {self.model.__tablename__}: {ex}")
                 return False
         
+        # Метод выдачи id первого элемента таблицы
+        async def start_id(self):
+            try:
+                async with self.session as session:
+                    result = await session.execute(
+                        select(self.model.id).order_by(self.model.id.asc()).limit(1)
+                    )
+                    first_id = result.scalar()
+                    return first_id
+            except Exception as ex:
+                logger.error(f"Ошибка получения первого id из таблицы {self.model.__tablename__}: {ex}")
+                return None
+
         # Метод выдачи конечного существующего id в таблицеы
         async def end_id(self):
             try:
@@ -204,6 +217,20 @@ class DataBase:
             except Exception as ex:
                 logger.error(f"Ошибка получения последнего id из таблицы {self.model.__tablename__}: {ex}")
                 return None
+        
+        # Метод, который выдеает количество элементов в таблице
+        async def length(self):
+            try:
+                async with self.session as session:
+                    result = await session.execute(
+                        select(func.count()).select_from(self.model)
+                    )
+                    count = result.scalar()
+                    return count
+            except Exception as ex:
+                logger.error(f"Ошибка получения количества записей в таблице {self.model.__tablename__}: {ex}")
+                return 0
+
 
 
     class Gamers(__Base):

@@ -73,7 +73,7 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
 
 
 # Обработчик на участвующих (тех, кто нажал на |Я| и теперь участвует в игре)
-@router.callback_query(StateFilter(GameStates.choosing_participants), GameCallbackFactory.filter(F.step == "i_will"))
+@router.callback_query(GameStates.choosing_participants, GameCallbackFactory.filter(F.step == "i_will"))
 async def choosing_participants_handler(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     
@@ -83,7 +83,7 @@ async def choosing_participants_handler(callback: CallbackQuery, state: FSMConte
 
 
 # Обработчик на окончание выбора игроков, которые будут учавствовать, в игре
-@router.callback_query(StateFilter(GameStates.choosing_participants), IsChatOwnerFilter(), GameCallbackFactory.filter(F.step == "ending_choosing"))
+@router.callback_query(GameStates.choosing_participants, IsChatOwnerFilter(), GameCallbackFactory.filter(F.step == "ending_choosing"))
 async def ending_choosing_participants_handler(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(messages.take("ending_choosing"))
     data = await state.get_data()
@@ -120,7 +120,7 @@ async def ending_choosing_participants_handler(callback: CallbackQuery, state: F
 
 
 # Обработчик на кол-во раундов, которое будет выбрано
-@router.message(StateFilter(GameStates.choosing_rounds), IsChatOwnerFilter(), F.text.isdigit())
+@router.message(GameStates.choosing_rounds, IsChatOwnerFilter(), F.text.isdigit())
 async def choosing_rounds_handler(message: Message, state: FSMContext):
     data = await state.get_data()
 

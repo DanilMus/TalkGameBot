@@ -1,9 +1,7 @@
-# 
-# | CRUD на Admins |
-# 
+"""| CRUD на Admins |"""
 
 
-# Библиотеки
+
 from aiogram import F, Router, BaseMiddleware
 from aiogram.types import Message, CallbackQuery, TelegramObject
 from aiogram.fsm.context import FSMContext
@@ -20,13 +18,14 @@ from config.config_reader import config
 
 
 
-# Переменные для оргиназации работы
+"""Переменные для оргиназации работы"""
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
 messages = Messages(__file__) # текст программы
 handlers = DatabaseHandlersBase(__file__)
 
 
+"""Фильтры и Мидлвари"""
 # Мидлварь на проверку прав доступа главного админа
 class IsCreatorMiddleware(BaseMiddleware):
     async def __call__(
@@ -74,8 +73,8 @@ async def create_Admins_handler(message: Message):
 
 # Обработчик на чтение Admins
 @router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "read"))
-async def read_Admins_handler(callback: CallbackQuery):
-    await handlers.read_hadler(callback)
+async def read_Admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory):
+    await handlers.read_hadler(callback, callback_data)
 
 
 

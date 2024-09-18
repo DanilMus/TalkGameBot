@@ -10,12 +10,10 @@ from aiogram.filters.callback_data import CallbackData
 class DatabaseCallbackFactory(CallbackData, prefix= "db"):
     table: str
     action: str
+    read_page: int = 0
 
 # Класс для управления колбэками в game
 class GameCallbackFactory(CallbackData, prefix= "game"):
     step: str
     question_or_action: bool = False
     no_or_yes: bool = False
-
-    # def __init__(self, step: str, question_or_action: bool = False, no_or_yes: bool = False):
-    #     super().__init__(step= step, question_or_action= question_or_action, no_or_yes= no_or_yes)

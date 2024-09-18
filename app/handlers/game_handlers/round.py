@@ -2,10 +2,10 @@
 
 
 from aiogram import F, Router
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
-from aiogram.filters import Command, BaseFilter, StateFilter
+from aiogram.types import CallbackQuery
+from aiogram.filters import BaseFilter, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder
     
 import logging
 
@@ -38,7 +38,7 @@ class AnswerOfOthersTurnFilter(BaseFilter):
 
 """Обработчики""" 
 # Самое начало, где пишется какой раунд и где происходит перенос к выбору вопроса или действия
-@router.callback_query(StateFilter(GameStates.starting_round), GameCallbackFactory.filter(F.step == "starting_round"))
+@router.callback_query(GameStates.starting_round, GameCallbackFactory.filter(F.step == "starting_round"))
 async def starting_round_handler(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     await callback.message.edit_text(messages.take("starting_round") % data["round"])
@@ -57,7 +57,7 @@ async def question_or_action_handler(callback: CallbackQuery, state: FSMContext)
 
 
 # Выдача вопроса или действия с возможностью закончить ответ
-@router.callback_query(StateFilter(GameStates.starting_round), GameCallbackFactory.filter(F.step == "question_action"), AnswerOfWhosTurnFilter())
+@router.callback_query(GameStates.starting_round, GameCallbackFactory.filter(F.step == "question_action"), AnswerOfWhosTurnFilter())
 async def question_action_handler(callback: CallbackQuery, callback_data: GameCallbackFactory, state: FSMContext):
     data = await state.get_data()
 
@@ -68,7 +68,7 @@ async def question_action_handler(callback: CallbackQuery, callback_data: GameCa
 
 
 # Это уже по сути голосование, где другие игроки оценивают, как ответил тот, чья очередь
-@router.callback_query(StateFilter(GameStates.starting_round), GameCallbackFactory.filter(F.step == "end_question_action"), AnswerOfWhosTurnFilter())
+@router.callback_query(GameStates.starting_round, GameCallbackFactory.filter(F.step == "end_question_action"), AnswerOfWhosTurnFilter())
 async def end_question_action_handler(callback: CallbackQuery, callback_data: GameCallbackFactory, state: FSMContext):
     data = await state.get_data()
 
@@ -83,7 +83,7 @@ async def end_question_action_handler(callback: CallbackQuery, callback_data: Ga
 
 
 # То, где обрабатывается конец ответа, раунда и игры и где происходят соответствующие перенаправления на нужные функции
-@router.callback_query(StateFilter(GameStates.starting_round), GameCallbackFactory.filter(F.step == "no_yes_question_action"), AnswerOfOthersTurnFilter())
+@router.callback_query(GameStates.starting_round, GameCallbackFactory.filter(F.step == "no_yes_question_action"), AnswerOfOthersTurnFilter())
 async def no_yes_question_action_handler(callback: CallbackQuery, callback_data: GameCallbackFactory, state: FSMContext):
     await callback.answer(messages.take(callback_data.step) % callback.from_user.username)
 

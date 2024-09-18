@@ -1,9 +1,6 @@
-# 
-# | CRUD на Questions_Actions |
-# 
+"""| CRUD на Questions_Actions |"""
 
 
-# Библиотеки
 from aiogram import F, Router
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
@@ -18,7 +15,7 @@ from app.handlers.database_handlers.database_handlers_base import DatabaseHandle
 
 
 
-# Переменные для оргиназации работы
+"""Переменные для оргиназации работы"""
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
 messages = Messages(__file__) # текст программы
@@ -53,9 +50,8 @@ async def create_Questions_Actions_handler(message: Message):
 
 # Обработчик на чтение Questions_Actions
 @router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "read"))
-async def read_Questions_Actions_handler(callback: CallbackQuery):
-    await handlers.read_hadler(callback)
-
+async def read_Questions_Actions_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory):
+    await handlers.read_hadler(callback, callback_data)
 
 
 # 

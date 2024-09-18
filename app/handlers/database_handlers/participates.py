@@ -27,5 +27,5 @@ handlers = DatabaseHandlersBase(__file__)
 
 # Обработчик на чтение Participates
 @router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "read"))
-async def read_participates_handler(callback: CallbackQuery):
-    await handlers.read_hadler(callback)
+async def read_participates_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory):
+    await handlers.read_hadler(callback, callback_data)

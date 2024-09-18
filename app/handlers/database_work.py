@@ -1,8 +1,6 @@
-# 
-# |Обработчики для выбора с какой базой работать|
-# 
+"""|Обработчики для выбора с какой базой работать|"""
 
-# библиотеки
+
 from aiogram import F, Router, BaseMiddleware
 from aiogram.types import Message, CallbackQuery, TelegramObject
 from aiogram.filters import Command
@@ -12,7 +10,6 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 import logging
 from typing import Any, Callable, Dict, Awaitable
 
-
 # свои модули
 from app.messages import Messages
 from app.database import DataBase, async_session
@@ -21,18 +18,16 @@ from app.handlers.database_handlers import admins, answers, gamers, games, parti
 from config.config_reader import config
 
 
-# Переменные для оргиназации работы
+"""Переменные для оргиназации работы"""
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
 messages = Messages(__file__) # текст программы
 
 
-
+"""Фильтры и Мидлвари"""
 # Ставим Фильтр на действие только внутри частных чатов
 router.message.filter(F.chat.type == "private") 
 router.callback_query.filter(F.message.chat.type == "private") 
-
-
 
 # Мидлварь на проверку прав доступа
 class IsAdminMiddleware(BaseMiddleware):
@@ -54,16 +49,13 @@ class IsAdminMiddleware(BaseMiddleware):
         await event.answer(messages.take("no_rules"))
         return
     
-    
 # Подключение этой внутренней мидлвари на сообщения и на колбэки
 router.message.middleware(IsAdminMiddleware())
 router.callback_query.middleware(IsAdminMiddleware())
 
 
 
-# 
-# / Обработчики /
-# 
+"""/ Обработчики /"""
 # Обработчик для начала взаимодействия с базой
 @router.message(Command("db"))
 async def db_handler(message: Message, state: FSMContext):
@@ -122,7 +114,7 @@ async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbac
 
 
 
-# Подключение роутеров на обработку CRUD у различных таблиц
+"""Подключение роутеров с обработчиками таблиц базы"""
 router.include_routers(
     gamers.router,
     games.router,
