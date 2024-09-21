@@ -42,8 +42,8 @@ class Admin(Base):
 class Game(Base):
     __tablename__ = "Games"
     id = Column(Integer, primary_key=True, index=True)
-    start_or_end = Column(Boolean)
-    timing = Column(DateTime)
+    start_time = Column(DateTime)
+    end_time= Column(DateTime, nullable=True)  # end_timing может быть пустым (nullable=True)
 
 class QuestionAction(Base):
     __tablename__ = "Questions_Actions"
@@ -68,21 +68,22 @@ class Answer(Base):
     id_gamer = Column(Integer, ForeignKey('Gamers.id'))
     id_question_action = Column(Integer, ForeignKey('Questions_Actions.id'), nullable=True)
     id_question_action_from_gamer = Column(Integer, ForeignKey('Questions_Actions_From_Gamers.id'), nullable=True)
-    answer_start = Column(DateTime)
-    answer_end = Column(DateTime)
-    score = Column(Integer)
+    start_time = Column(DateTime)
+    end_time = Column(DateTime, nullable= True)
+    round = Column(Integer)
+    score = Column(Integer, nullable= True)
+
     game = relationship("Game")
     gamer = relationship("Gamer")
     question_action = relationship("QuestionAction", foreign_keys=[id_question_action])
     question_action_from_gamer = relationship("QuestionActionFromGamer", foreign_keys=[id_question_action_from_gamer])
 
-class Participate(Base):
-    __tablename__ = "Participates"
+class Participant(Base):
+    __tablename__ = "Participants"
     id = Column(Integer, primary_key=True, index=True)
     id_game = Column(Integer, ForeignKey('Games.id'))
     id_gamer = Column(Integer, ForeignKey('Gamers.id'))
-    connection_or_disconnection = Column(Boolean)
-    timing = Column(DateTime)
+    connection_time = Column(DateTime)
     game = relationship("Game")
     gamer = relationship("Gamer")
 
@@ -246,10 +247,29 @@ class DataBase:
             super().__init__(session, Game)
 
         async def create_start(self):
-            return await self.create(start_or_end=False, timing=datetime.now())
+            """Начало игры, где записывается только start_time
 
-        async def create_end(self):
-            return await self.create(start_or_end=True, timing=datetime.now())
+            Returns:
+                Game: возращает экзмепляр класса Game, элемента, который добавили
+            """            
+            try:
+                return await self.create(start_time= datetime.now(), end_time=None)
+            except Exception as ex:
+                logger.error(f"Ошибка создания начала игры: {ex}")
+                return None
+
+        async def add_end(self, id_game):
+            """Оконачание игры: добавление end_time по id
+
+            Returns:
+                Game: возращает экзмепляр класса Game, элемента, который добавили
+            """            
+            try:
+                return await self.update(id_game, end_time= datetime.now())
+            except Exception as ex:
+                logger.error(f"Ошибка завершения игры с id={id_game}: {ex}")
+                return None
+
 
     class Questions_Actions(__Base):
         def __init__(self, session):
@@ -272,11 +292,11 @@ class DataBase:
             try:
                 async with self.session as session:
                     result_false = await session.execute(select(self.model).where(self.model.question_or_action == False))
-                    questions = [elem.question_action for elem in result_false.scalars().all()]
+                    questions = [elem for elem in result_false.scalars().all()]
                     questions = random.sample(questions, num_rounds*num_participants)
 
                     result_true = await session.execute(select(self.model).where(self.model.question_or_action == True))
-                    actions = [elem.question_action for elem in result_true.scalars().all()]
+                    actions = [elem for elem in result_true.scalars().all()]
                     actions = random.sample(actions, num_rounds*num_participants)
 
                     return {False: questions, True: actions}
@@ -292,15 +312,46 @@ class DataBase:
         def __init__(self, session):
             super().__init__(session, Answer)
 
-    class Participates(__Base):
+        async def create_start(self, id_game, id_gamer, id_question_action= None, id_question_action_from_gamer= None, round= None):
+            """Создает запись в таблице Answer с указанными параметрами, кроме end_time и score"""
+            try:
+                return await self.create(
+                    id_game= id_game, 
+                    id_gamer= id_gamer, 
+                    id_question_action= id_question_action,
+                    id_question_action_from_gamer= id_question_action_from_gamer,
+                    start_time= datetime.now(),
+                    end_time= None,
+                    round= round,
+                    score= None
+                )
+            except Exception as ex:
+                logger.error(f"Ошибка создания начала ответа: {ex}")
+                return None
+
+        async def add_end(self, id_answer):
+            """Добавляет конец (end_time) в запись с указанным id"""
+            try:
+                return await self.update(id_answer, end_time= datetime.now())
+            except Exception as ex:
+                logger.error(f"Ошибка добавления времени завершения ответа с id={id_answer}: {ex}")
+                return None
+
+        async def add_score(self, id_answer, score):
+            """Добавляет результат (score) в запись с указанным id"""
+            try:
+                return await self.update(id_answer, score=score)
+            except Exception as ex:
+                logger.error(f"Ошибка добавления результата ответа с id={id_answer}: {ex}")
+                return None
+
+
+    class Participants(__Base):
         def __init__(self, session):
-            super().__init__(session, Participate)
+            super().__init__(session, Participant)
 
         async def create_connection(self, id_game, id_gamer):
-            return await self.create(id_game=id_game, id_gamer=id_gamer, connection_or_disconnection=False, timing=datetime.now())
-
-        async def create_disconnection(self, id_game, id_gamer):
-            return await self.create(id_game=id_game, id_gamer=id_gamer, connection_or_disconnection=True, timing=datetime.now())
+            return await self.create(id_game= id_game, id_gamer= id_gamer, connection_time= datetime.now())
 
 
 """Пример использования базы данных"""

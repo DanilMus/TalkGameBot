@@ -29,8 +29,8 @@ CREATE TABLE Admins (
 CREATE TABLE Games (
     id INT AUTO_INCREMENT PRIMARY KEY, 
     -- Внутренние
-    start_or_end BOOLEAN, -- начало игры - 0, конец - 1
-    timing DATETIME -- время, когда это произошло
+    start_time DATETIME, -- время начала игры
+    end_time DATETIME NULL -- время конца игры
 );
 
 -- Таблица вопросос и действий - главная таблица, это и есть игры по сути
@@ -67,9 +67,10 @@ CREATE TABLE Answers (
     id_question_action INT NULL, -- если есть, значит вопрос от системы, иначе вопрос от игрока
     id_question_action_from_gamer INT NULL, -- аналогично тому, что строчкой выше
     -- Внутренние
-    answer_start DATETIME, -- когда начали (просто запоминаем и заносим, когда закончат)
-    answer_end DATETIME, -- когда закончили
-    score INT, -- с каким счетом ответил
+    start_time DATETIME, -- когда начали (просто запоминаем и заносим, когда закончат)
+    end_time DATETIME NULL, -- когда закончили
+    round INT, -- в какой раунд
+    score INT NULL, -- с каким счетом ответил
 
     FOREIGN KEY (id_game) REFERENCES Games(id),
     FOREIGN KEY (id_gamer) REFERENCES Gamers(id),
@@ -78,14 +79,13 @@ CREATE TABLE Answers (
 );
 
 -- Таблица с подключениями. Кто куда подлючился и когда отключился.
-CREATE TABLE Participates (
+CREATE TABLE Participants (
     id INT AUTO_INCREMENT PRIMARY KEY,
     -- Сторонние 
     id_game INT,
     id_gamer BIGINT,
     -- Внутренние
-    connection_or_disconnection BOOLEAN, -- подлючение - 0, отключение - 1
-    timing DATETIME, -- время, когда это происходит
+    connection_time DATETIME, -- время, когда игрок подключается к игре
 
     FOREIGN KEY (id_game) REFERENCES Games(id),
     FOREIGN KEY (id_gamer) REFERENCES Gamers(id)

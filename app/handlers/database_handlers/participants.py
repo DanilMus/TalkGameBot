@@ -1,5 +1,5 @@
 # 
-# |Read на Participates|
+# |Read на Participants|
 # 
 
 
@@ -25,7 +25,7 @@ handlers = DatabaseHandlersBase(__file__)
 # | Read |
 # 
 
-# Обработчик на чтение Participates
+# Обработчик на чтение Participants
 @router.callback_query(DatabaseCallbackFactory.filter(F.table == handlers.table_name), DatabaseCallbackFactory.filter(F.action == "read"))
-async def read_participates_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory):
+async def read_participants_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory):
     await handlers.read_hadler(callback, callback_data)

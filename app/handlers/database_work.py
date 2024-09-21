@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Awaitable
 from app.messages import Messages
 from app.database import DataBase, async_session
 from app.callbacks_factories import DatabaseCallbackFactory
-from app.handlers.database_handlers import admins, answers, gamers, games, participates, questions_actions, questions_actions_from_gamers
+from app.handlers.database_handlers import admins, answers, gamers, games, participants, questions_actions, questions_actions_from_gamers
 from config.config_reader import config
 
 
@@ -121,6 +121,6 @@ router.include_routers(
     questions_actions.router,
     questions_actions_from_gamers.router,
     answers.router,
-    participates.router,
+    participants.router,
     admins.router,
 )
