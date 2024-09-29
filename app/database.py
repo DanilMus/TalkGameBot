@@ -17,7 +17,7 @@ from config.config_reader import config
 """Переменные для работы"""
 # Настройка создания подключения к базе
 DATABASE_URL = f"mysql+aiomysql://{config.db_user.get_secret_value()}:{config.db_password.get_secret_value()}@{config.db_host.get_secret_value()}/{config.db_name.get_secret_value()}"
-engine = create_async_engine(DATABASE_URL, echo= False)
+engine = create_async_engine(DATABASE_URL, echo= True) # Если echo = True, то он показывает конкретные sql-запросы
 Base = declarative_base()
 # Переменная, через которую будет производиться подключение к базе
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

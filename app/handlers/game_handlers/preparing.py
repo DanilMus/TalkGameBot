@@ -105,8 +105,14 @@ async def choosing_participants_handler(callback: CallbackQuery, state: FSMConte
         data["participants"][callback.from_user.username] = 0 # Добавляем его в список и заносим, что он будет участвовать
         await callback.message.answer(messages.take("new_participant") % callback.from_user.username)
 
-        # Отмечаем в базе подключение игрока к игре
+        
         async with async_session() as session:
+            # Проверяем существование игрока в базе
+            gamers = DataBase.Gamers(session)
+            if not await gamers.is_exists(callback.from_user.id):
+                await gamers.create(id= callback.from_user.id, username= callback.from_user.username)
+
+            # Отмечаем в базе подключение игрока к игре
             participants = DataBase.Participants(session)
             await participants.create_connection(id_game= data["id_game"], id_gamer= callback.from_user.id)
 

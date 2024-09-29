@@ -84,7 +84,7 @@ def kb_for_db_handler() -> InlineKeyboardBuilder:
     kb.button(text= "Вопросы и Действия от игроков", callback_data= DatabaseCallbackFactory(table= "Questions_Actions_From_Gamers", action= "start"))
     # 4 строка
     kb.button(text= "Ответы", callback_data= DatabaseCallbackFactory(table= "Answers", action= "start"))
-    kb.button(text= "Участники", callback_data= DatabaseCallbackFactory(table= "Participates", action= "start"))
+    kb.button(text= "Участники", callback_data= DatabaseCallbackFactory(table= "Participants", action= "start"))
     # Отмечаем строки
     kb.adjust(3, 1, 1, 2)
     return kb

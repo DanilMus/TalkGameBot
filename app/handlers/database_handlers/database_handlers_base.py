@@ -46,10 +46,12 @@ class DatabaseHandlersBase:
         async with async_session() as session:
             table_db = self.Model(session)
             end_id = await table_db.end_id()
+
+            if not end_id: # Проверка на пустоту
+                return await callback.message.edit_text(self.messages.take("base_empty"))
+
             table_data = await table_db.read_from_to( end_id - 5*callback_data.read_page, end_id - max(await table_db.start_id(), 5*(callback_data.read_page+1)) ) # Выдает элементы по 5 на каждое сообщение
 
-            if not table_data: # Проверка на пустоту
-                return await callback.message.answer(self.messages.take("base_empty"))
             
             
             attributes = [column.name for column in table_db.model.__table__.columns]
