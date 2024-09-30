@@ -17,7 +17,7 @@ from config.config_reader import config
 """Переменные для работы"""
 # Настройка создания подключения к базе
 DATABASE_URL = f"mysql+aiomysql://{config.db_user.get_secret_value()}:{config.db_password.get_secret_value()}@{config.db_host.get_secret_value()}/{config.db_name.get_secret_value()}"
-engine = create_async_engine(DATABASE_URL, echo= True) # Если echo = True, то он показывает конкретные sql-запросы
+engine = create_async_engine(DATABASE_URL, echo= False) # Если echo = True, то он показывает конкретные sql-запросы
 Base = declarative_base()
 # Переменная, через которую будет производиться подключение к базе
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
@@ -143,6 +143,43 @@ class DataBase:
             except Exception as ex:
                 logger.error(f"Ошибка чтения записей из таблицы {self.model.__tablename__} с {from_id} до {to_id}: {ex}")
                 return []
+            
+        
+        async def read_from_with_step(self, from_id: int, step: int):
+            """Метод для получения списка step эл-тов базы начиная с from_id
+
+            Args:
+                from_id (int): id - эл-та, с которого будем двигаться
+                step (int): кол-во элементов, которое берем, и еще это шаг, который выдает элементы, которые были записаны до from_id (step > 0) и после from_id (step < 0)
+
+            Returns:
+                list: список элементов таблицы
+            """            
+            try:
+                async with self.session as session:
+                    if step > 0:
+                        # Если шаг положительный, выбираем элементы, которые идут после from_id
+                        result = await session.execute(
+                            select(self.model)
+                            .where(self.model.id >= from_id)  # элементы с id больше from_id
+                            .order_by(self.model.id.asc())   # сортировка по возрастанию
+                            .limit(step)  # возвращаем ровно step элементов
+                        )
+                    else:
+                        # Если шаг отрицательный, выбираем элементы, которые идут перед from_id
+                        result = await session.execute(
+                            select(self.model)
+                            .where(self.model.id <= from_id)  # элементы с id меньше from_id
+                            .order_by(self.model.id.desc())  # сортировка по убыванию
+                            .limit(abs(step))  # возвращаем ровно |step| элементов
+                        )
+                    
+                    # Возвращаем результат в виде списка объектов
+                    return result.scalars().all()
+            except Exception as ex:
+                logger.error(f"Ошибка чтения записей из таблицы {self.model.__tablename__} с from_id={from_id} и step={step}: {ex}")
+                return []
+
 
 
         async def update(self, id, **kwargs):

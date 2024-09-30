@@ -1,8 +1,7 @@
-
+""" | Файл с классом обработчиков для БД | """
 
 
 from aiogram.types import Message, CallbackQuery
-from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import logging
@@ -50,9 +49,9 @@ class DatabaseHandlersBase:
             if not end_id: # Проверка на пустоту
                 return await callback.message.edit_text(self.messages.take("base_empty"))
 
-            table_data = await table_db.read_from_to( end_id - 5*callback_data.read_page, end_id - max(await table_db.start_id(), 5*(callback_data.read_page+1)) ) # Выдает элементы по 5 на каждое сообщение
 
-            
+            table_data = await table_db.read_from_with_step( end_id, -5 )
+
             
             attributes = [column.name for column in table_db.model.__table__.columns]
             response = "\n".join([
