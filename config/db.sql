@@ -14,13 +14,15 @@ ALTER DATABASE talkgamebot_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 -- Таблица с игроками 
 CREATE TABLE Gamers (
     id BIGINT PRIMARY KEY, -- id в телеграмме
-    -- Внутренние
+    created_at DATETIME,
+    -- Внутренние]
     username VARCHAR(63) -- тэг просто, чтобы было удобнее идифицировать
 );
 
 -- Таблица админов (игроков с повышенными правами)
 CREATE TABLE Admins (
     id BIGINT PRIMARY KEY, -- id в телеграмме
+    created_at DATETIME,
     -- Внутренние
     username VARCHAR(63) -- все как и выше
 );
@@ -28,14 +30,15 @@ CREATE TABLE Admins (
 -- Таблица игр (во сколько началась игра и во сколько закончилась)
 CREATE TABLE Games (
     id INT AUTO_INCREMENT PRIMARY KEY, 
+    created_at DATETIME,
     -- Внутренние
-    start_time DATETIME, -- время начала игры
-    end_time DATETIME NULL -- время конца игры
+    finished_at DATETIME NULL -- время конца игры
 );
 
 -- Таблица вопросос и действий - главная таблица, это и есть игры по сути
 CREATE TABLE Questions_Actions (
     id INT AUTO_INCREMENT PRIMARY KEY, 
+    created_at DATETIME,
     -- Сторонние 
     id_admin BIGINT,
     -- Внутренние
@@ -50,6 +53,7 @@ CREATE TABLE Questions_Actions (
 -- Таблица для вопросов и действий от игроков, чтобы было веселеее и чтобы можно было брать идеи у них
 CREATE TABLE Questions_Actions_From_Gamers (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at DATETIME,
     -- Сторонние 
     id_gamer BIGINT, 
     -- Внутренние
@@ -61,15 +65,15 @@ CREATE TABLE Questions_Actions_From_Gamers (
 -- Таблица с ответами. Здесь хранится все знания о том, кто ответил, в какой игре, на какой вопрос, что получил за ответ
 CREATE TABLE Answers (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at DATETIME,
     -- Сторонние 
     id_game INT,
     id_gamer BIGINT,
     id_question_action INT NULL, -- если есть, значит вопрос от системы, иначе вопрос от игрока
     id_question_action_from_gamer INT NULL, -- аналогично тому, что строчкой выше
-    -- Внутренние
-    start_time DATETIME, -- когда начали (просто запоминаем и заносим, когда закончат)
-    end_time DATETIME NULL, -- когда закончили
+    -- Внутренниезаносим, когда закончат)
     round INT, -- в какой раунд
+    finished_at DATETIME NULL, -- когда закончили
     score INT NULL, -- с каким счетом ответил
 
     FOREIGN KEY (id_game) REFERENCES Games(id),
@@ -81,11 +85,10 @@ CREATE TABLE Answers (
 -- Таблица с подключениями. Кто куда подлючился и когда отключился.
 CREATE TABLE Participants (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at DATETIME,
     -- Сторонние 
     id_game INT,
     id_gamer BIGINT,
-    -- Внутренние
-    connection_time DATETIME, -- время, когда игрок подключается к игре
 
     FOREIGN KEY (id_game) REFERENCES Games(id),
     FOREIGN KEY (id_gamer) REFERENCES Gamers(id)

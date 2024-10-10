@@ -32,45 +32,51 @@ logger.setLevel(logging.INFO)
 class Gamer(Base):
     __tablename__ = "Gamers"
     id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime)
     username = Column(String(63), index=True)
 
 class Admin(Base):
     __tablename__ = "Admins"
     id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime)
     username = Column(String(63), index=True)
 
 class Game(Base):
     __tablename__ = "Games"
     id = Column(Integer, primary_key=True, index=True)
-    start_time = Column(DateTime)
-    end_time= Column(DateTime, nullable=True)  # end_timing может быть пустым (nullable=True)
+    created_at = Column(DateTime)
+    finished_at= Column(DateTime, nullable=True)  # end_timing может быть пустым (nullable=True)
 
 class QuestionAction(Base):
     __tablename__ = "Questions_Actions"
     id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime)
     id_admin = Column(Integer, ForeignKey('Admins.id'))
     question_or_action = Column(Boolean)
     category = Column(String(127))
     question_action = Column(String, unique=True)
+
     admin = relationship("Admin")
 
 class QuestionActionFromGamer(Base):
     __tablename__ = "Questions_Actions_From_Gamers"
     id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime)
     id_gamer = Column(Integer, ForeignKey('Gamers.id'))
     question_action = Column(String)
+
     gamer = relationship("Gamer")
 
 class Answer(Base):
     __tablename__ = "Answers"
     id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime)
     id_game = Column(Integer, ForeignKey('Games.id'))
     id_gamer = Column(Integer, ForeignKey('Gamers.id'))
     id_question_action = Column(Integer, ForeignKey('Questions_Actions.id'), nullable=True)
     id_question_action_from_gamer = Column(Integer, ForeignKey('Questions_Actions_From_Gamers.id'), nullable=True)
-    start_time = Column(DateTime)
-    end_time = Column(DateTime, nullable= True)
     round = Column(Integer)
+    finished_at = Column(DateTime, nullable= True)
     score = Column(Integer, nullable= True)
 
     game = relationship("Game")
@@ -81,9 +87,11 @@ class Answer(Base):
 class Participant(Base):
     __tablename__ = "Participants"
     id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime)
     id_game = Column(Integer, ForeignKey('Games.id'))
     id_gamer = Column(Integer, ForeignKey('Gamers.id'))
     connection_time = Column(DateTime)
+
     game = relationship("Game")
     gamer = relationship("Gamer")
 
@@ -99,6 +107,10 @@ class DataBase:
             try:
                 async with self.session as session:
                     async with session.begin():
+                        # Автоматически заполняем created_at, если его нет в таблице и оно не указано (так то это поле есть во всех таблицах, просто вдруг оно будет убрано когда-нибудь)
+                        if 'created_at' in self.model.__table__.columns and 'created_at' not in kwargs:
+                            kwargs['created_at'] = datetime.now()
+
                         instance = self.model(**kwargs)
                         session.add(instance)
                     await session.commit()
@@ -124,62 +136,22 @@ class DataBase:
             except Exception as ex:
                 logger.error(f"Ошибка чтения всех записей из таблицы {self.model.__tablename__}: {ex}")
                 return []
-        
-        # Метод выдачи эл-тов с from_id по to_id (выдача идет как по возрастанию так и по убыванию, смотря, как укажешь)
-        async def read_from_to(self, from_id, to_id):
+
+        async def read_by_page(self, page: int, limit: int = 5):
             try:
                 async with self.session as session:
-                    if from_id < to_id:
-                        # Если from_id меньше to_id, то выбираем по возрастанию
-                        result = await session.execute(
-                            select(self.model).where(self.model.id >= from_id, self.model.id <= to_id).order_by(self.model.id.asc())
-                        )
-                    else:
-                        # Если from_id больше to_id, то выбираем по убыванию
-                        result = await session.execute(
-                            select(self.model).where(self.model.id <= from_id, self.model.id >= to_id).order_by(self.model.id.desc())
-                        )
-                    return result.scalars().all()
+                    # Вычисляем количество элементов, которые нужно пропустить
+                    offset_value = page * limit
+                    result = await session.execute(
+                        select(self.model)
+                        .order_by(self.model.created_at.desc())  # Сортировка по дате создания
+                        .offset(offset_value)  # Пропустить предыдущие элементы
+                        .limit(limit)  # Ограничение на 5 элементов
+                    )
+                    return result.scalars().all()  # Возвращаем список элементов
             except Exception as ex:
-                logger.error(f"Ошибка чтения записей из таблицы {self.model.__tablename__} с {from_id} до {to_id}: {ex}")
+                logger.error(f"Ошибка при чтении записей с разбивкой по страницам из таблицы {self.model.__tablename__}: {ex}")
                 return []
-            
-        
-        async def read_from_with_step(self, from_id: int, step: int):
-            """Метод для получения списка step эл-тов базы начиная с from_id
-
-            Args:
-                from_id (int): id - эл-та, с которого будем двигаться
-                step (int): кол-во элементов, которое берем, и еще это шаг, который выдает элементы, которые были записаны до from_id (step > 0) и после from_id (step < 0)
-
-            Returns:
-                list: список элементов таблицы
-            """            
-            try:
-                async with self.session as session:
-                    if step > 0:
-                        # Если шаг положительный, выбираем элементы, которые идут после from_id
-                        result = await session.execute(
-                            select(self.model)
-                            .where(self.model.id >= from_id)  # элементы с id больше from_id
-                            .order_by(self.model.id.asc())   # сортировка по возрастанию
-                            .limit(step)  # возвращаем ровно step элементов
-                        )
-                    else:
-                        # Если шаг отрицательный, выбираем элементы, которые идут перед from_id
-                        result = await session.execute(
-                            select(self.model)
-                            .where(self.model.id <= from_id)  # элементы с id меньше from_id
-                            .order_by(self.model.id.desc())  # сортировка по убыванию
-                            .limit(abs(step))  # возвращаем ровно |step| элементов
-                        )
-                    
-                    # Возвращаем результат в виде списка объектов
-                    return result.scalars().all()
-            except Exception as ex:
-                logger.error(f"Ошибка чтения записей из таблицы {self.model.__tablename__} с from_id={from_id} и step={step}: {ex}")
-                return []
-
 
 
         async def update(self, id, **kwargs):
@@ -231,11 +203,11 @@ class DataBase:
                 return False
         
         # Метод выдачи id первого элемента таблицы
-        async def start_id(self):
+        async def oldest_id(self):
             try:
                 async with self.session as session:
                     result = await session.execute(
-                        select(self.model.id).order_by(self.model.id.asc()).limit(1)
+                        select(self.model.id).order_by(self.model.created_at.asc()).limit(1)
                     )
                     first_id = result.scalar()
                     return first_id
@@ -244,17 +216,18 @@ class DataBase:
                 return None
 
         # Метод выдачи конечного существующего id в таблицеы
-        async def end_id(self):
+        async def newest_id(self):
             try:
                 async with self.session as session:
                     result = await session.execute(
-                        select(self.model.id).order_by(self.model.id.desc()).limit(1)
+                        select(self.model.id).order_by(self.model.created_at.desc()).limit(1)
                     )
                     last_id = result.scalar()
                     return last_id
             except Exception as ex:
-                logger.error(f"Ошибка получения последнего id из таблицы {self.model.__tablename__}: {ex}")
+                logger.error(f"Ошибка получения последнего id по времени создания в таблице {self.model.__tablename__}: {ex}")
                 return None
+
         
         # Метод, который выдеает количество элементов в таблице
         async def length(self):
@@ -282,30 +255,6 @@ class DataBase:
     class Games(__Base):
         def __init__(self, session):
             super().__init__(session, Game)
-
-        async def create_start(self):
-            """Начало игры, где записывается только start_time
-
-            Returns:
-                Game: возращает экзмепляр класса Game, элемента, который добавили
-            """            
-            try:
-                return await self.create(start_time= datetime.now(), end_time=None)
-            except Exception as ex:
-                logger.error(f"Ошибка создания начала игры: {ex}")
-                return None
-
-        async def add_end(self, id_game):
-            """Оконачание игры: добавление end_time по id
-
-            Returns:
-                Game: возращает экзмепляр класса Game, элемента, который добавили
-            """            
-            try:
-                return await self.update(id_game, end_time= datetime.now())
-            except Exception as ex:
-                logger.error(f"Ошибка завершения игры с id={id_game}: {ex}")
-                return None
 
 
     class Questions_Actions(__Base):
@@ -349,23 +298,6 @@ class DataBase:
         def __init__(self, session):
             super().__init__(session, Answer)
 
-        async def create_start(self, id_game, id_gamer, id_question_action= None, id_question_action_from_gamer= None, round= None):
-            """Создает запись в таблице Answer с указанными параметрами, кроме end_time и score"""
-            try:
-                return await self.create(
-                    id_game= id_game, 
-                    id_gamer= id_gamer, 
-                    id_question_action= id_question_action,
-                    id_question_action_from_gamer= id_question_action_from_gamer,
-                    start_time= datetime.now(),
-                    end_time= None,
-                    round= round,
-                    score= None
-                )
-            except Exception as ex:
-                logger.error(f"Ошибка создания начала ответа: {ex}")
-                return None
-
         async def add_end(self, id_answer):
             """Добавляет конец (end_time) в запись с указанным id"""
             try:
@@ -386,9 +318,6 @@ class DataBase:
     class Participants(__Base):
         def __init__(self, session):
             super().__init__(session, Participant)
-
-        async def create_connection(self, id_game, id_gamer):
-            return await self.create(id_game= id_game, id_gamer= id_gamer, connection_time= datetime.now())
 
 
 """Пример использования базы данных"""

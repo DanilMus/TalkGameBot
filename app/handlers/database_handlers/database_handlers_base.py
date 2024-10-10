@@ -36,7 +36,7 @@ class DatabaseHandlersBase:
             if await table_db.create(**kwargs): 
                 return await message.answer(self.messages.take("created"))
             
-        await message.answer(self.messages.take("error"))
+        await message.edit_text(self.messages.take("error"))
     
     # 
     # | Read |
@@ -44,14 +44,12 @@ class DatabaseHandlersBase:
     async def read_hadler(self, callback: CallbackQuery, callback_data: DatabaseCallbackFactory):
         async with async_session() as session:
             table_db = self.Model(session)
-            end_id = await table_db.end_id()
-
-            if not end_id: # Проверка на пустоту
+            
+            if not await table_db.length(): # Проверка на пустоту
                 return await callback.message.edit_text(self.messages.take("base_empty"))
 
 
-            table_data = await table_db.read_from_with_step( end_id, -5 )
-
+            table_data = await table_db.read_by_page(callback_data.read_page)
             
             attributes = [column.name for column in table_db.model.__table__.columns]
             response = "\n".join([
@@ -63,7 +61,7 @@ class DatabaseHandlersBase:
             if callback_data.read_page > 0:
                 keyboard.button(text= "<", callback_data= DatabaseCallbackFactory(table= callback_data.table, action= callback_data.action, read_page= callback_data.read_page-1))
             if (callback_data.read_page+1)*5 < await table_db.length():
-                keyboard.button(text= ">", callback_data= DatabaseCallbackFactory(table= callback_data.table, action= callback_data.action,  read_page= callback_data.read_page+1))
+                keyboard.button(text= ">", callback_data= DatabaseCallbackFactory(table= callback_data.table, action= callback_data.action, read_page= callback_data.read_page+1))
 
             await callback.message.edit_text(response, reply_markup= keyboard.as_markup())
 
@@ -76,7 +74,7 @@ class DatabaseHandlersBase:
             if await table_db.update(id, **kwargs):
                 return await message.answer(self.messages.take("updated"))
             
-        await message.answer(self.messages.take("error"))
+        await message.edit_text(self.messages.take("error"))
 
     # 
     # | Delete |
@@ -89,6 +87,6 @@ class DatabaseHandlersBase:
             if await table_db.delete(id):
                 return await message.answer(self.messages.take("deleted"))
             
-        await message.answer(self.messages.take("error"))
+        await message.edit_text(self.messages.take("error"))
 
 
