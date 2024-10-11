@@ -18,13 +18,17 @@ from app.states import GameStates
 
 
 
-"""Переменные для оргиназации работы"""
+"""
+Переменные для оргиназации работы
+"""
 logger = logging.getLogger(__name__) # логирование событий
 router = Router() # маршрутизатор
 messages = Messages(__file__) # класс с диалогами
 
 
-"""Фильтры"""
+"""
+Фильтры
+"""
 class IsChatOwnerFilter(BaseFilter):
     """Фильтр на владельца чата
     """    
@@ -45,7 +49,9 @@ class IsChatOwnerFilter(BaseFilter):
         return member.status is ChatMemberStatus.CREATOR
     
 
-"""Клавиатуры (если используются больше чем в 1 обработчике)"""
+"""
+Клавиатуры (если используются больше чем в 1 обработчике)
+"""
 def keyboard_voating_participants() -> InlineKeyboardBuilder:
     """Клавиатура для определения участников игр
 
@@ -59,7 +65,9 @@ def keyboard_voating_participants() -> InlineKeyboardBuilder:
     return kb
 
     
-"""Обработчики""" 
+"""
+Обработчики
+""" 
 @router.my_chat_member(
     ChatMemberUpdatedFilter(
         member_status_changed= JOIN_TRANSITION
@@ -90,7 +98,7 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
     # Отмечаем в базе, что игра началась
     async with async_session() as session:
         games = DataBase.Games(session)
-        game = await games.create_start()
+        game = await games.create()
         await state.update_data(id_game= game.id)
 
 
@@ -114,7 +122,7 @@ async def choosing_participants_handler(callback: CallbackQuery, state: FSMConte
 
             # Отмечаем в базе подключение игрока к игре
             participants = DataBase.Participants(session)
-            await participants.create_connection(id_game= data["id_game"], id_gamer= callback.from_user.id)
+            await participants.create(id_game= data["id_game"], id_gamer= callback.from_user.id)
 
 
 @router.callback_query(GameStates.choosing_participants, IsChatOwnerFilter(), GameCallbackFactory.filter(F.step == "ending_choosing"))

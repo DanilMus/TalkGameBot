@@ -90,7 +90,6 @@ class Participant(Base):
     created_at = Column(DateTime)
     id_game = Column(Integer, ForeignKey('Games.id'))
     id_gamer = Column(Integer, ForeignKey('Gamers.id'))
-    connection_time = Column(DateTime)
 
     game = relationship("Game")
     gamer = relationship("Gamer")
@@ -256,6 +255,13 @@ class DataBase:
         def __init__(self, session):
             super().__init__(session, Game)
 
+        async def finish(self, id_game: int):
+            try: 
+                return await self.update(id= id_game, finished_at= datetime.now())
+            except Exception as ex:
+                logger.error(f"Ошибка добавления финиша игры с id= {id_game}: {ex}")
+                return None
+
 
     class Questions_Actions(__Base):
         def __init__(self, session):
@@ -298,10 +304,10 @@ class DataBase:
         def __init__(self, session):
             super().__init__(session, Answer)
 
-        async def add_end(self, id_answer):
+        async def finish(self, id_answer):
             """Добавляет конец (end_time) в запись с указанным id"""
             try:
-                return await self.update(id_answer, end_time= datetime.now())
+                return await self.update(id_answer, finished_at= datetime.now())
             except Exception as ex:
                 logger.error(f"Ошибка добавления времени завершения ответа с id={id_answer}: {ex}")
                 return None

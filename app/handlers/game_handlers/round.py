@@ -60,7 +60,9 @@ class AnswerOfOthersTurnFilter(BaseFilter):
 
 
 
-"""Обработчики""" 
+"""
+Обработчики
+""" 
 @router.callback_query(GameStates.starting_round, GameCallbackFactory.filter(F.step == "starting_round"))
 async def starting_round_handler(callback: CallbackQuery, state: FSMContext):
     """Самое начало, где пишется какой раунд и где происходит перенос к выбору вопроса или действия
@@ -95,7 +97,7 @@ async def question_action_handler(callback: CallbackQuery, callback_data: GameCa
     # Занесение информации о вопросе в базу
     async with async_session() as session:
         answers = DataBase.Answers(session)
-        answer = await answers.create_start(
+        answer = await answers.create(
             id_game= data["id_game"],
             id_gamer= callback.from_user.id,
             id_question_action= question_action.id,
@@ -118,7 +120,7 @@ async def end_question_action_handler(callback: CallbackQuery, callback_data: Ga
     # Занесение в базу времени оконачания ответа
     async with async_session() as session:
         answers = DataBase.Answers(session)
-        await answers.add_end(data["id_answer"])
+        await answers.finish(data["id_answer"])
 
     # Формирование голосования на ответ
     kb= InlineKeyboardBuilder()
@@ -175,7 +177,7 @@ async def end_game_handler(callback: CallbackQuery, state: FSMContext):
     # Занесение в базу информации о конце игры
     async with async_session() as session:
         games = DataBase.Games(session)
-        await games.add_end(data["id_game"])
+        await games.finish(data["id_game"])
 
     # Формирование ответа с результатами игры
     sorted_participants = dict(sorted(data["participants"].items(), key= lambda x: x[1], reverse= True))
