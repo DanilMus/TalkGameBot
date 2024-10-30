@@ -3,7 +3,7 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, func
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, func
 from sqlalchemy.future import select
 
 from datetime import datetime
@@ -41,6 +41,16 @@ class Admin(Base):
     created_at = Column(DateTime)
     username = Column(String(63), index=True)
 
+class Chat(Base):
+    __tablename__ = "Chats"
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime)
+    name = Column(String)
+    type = Column(Enum("private", "group", "supergroup", "channel"), nullable= False)
+    num_members = Column(Integer)
+    bot_is_kicked = Column(Boolean)
+
+
 class Game(Base):
     __tablename__ = "Games"
     id = Column(Integer, primary_key=True, index=True)
@@ -53,7 +63,7 @@ class QuestionAction(Base):
     created_at = Column(DateTime)
     id_admin = Column(Integer, ForeignKey('Admins.id'))
     question_or_action = Column(Boolean)
-    category = Column(String(127))
+    category = Column(Enum("Активность", "Философия", "Гипотетические ситуации", "Мечты и страхи", "Прошлое", "Юмор", "Пошлое", "Кринж"), nullable = False)
     question_action = Column(String, unique=True)
 
     admin = relationship("Admin")

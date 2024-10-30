@@ -173,7 +173,7 @@ async def no_yes_question_action_handler(callback: CallbackQuery, callback_data:
 # Конец и выдача результатов
 async def end_game_handler(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-
+    
     # Занесение в базу информации о конце игры
     async with async_session() as session:
         games = DataBase.Games(session)

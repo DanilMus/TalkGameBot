@@ -6,7 +6,7 @@
 -- Создание базы
 CREATE DATABASE IF NOT EXISTS talkgamebot_db;
 USE talkgamebot_db;
-ALTER DATABASE talkgamebot_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER DATABASE talkgamebot_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; -- устранение проблем с кодировкой
 
 /*
 Создание таблиц
@@ -27,12 +27,27 @@ CREATE TABLE Admins (
     username VARCHAR(63) -- все как и выше
 );
 
+-- Таблица чатов, куда подключили бота
+CREATE TABLE Chats (
+    id BIGINT PRIMARY KEY, -- id чата в телеграмме
+    created_at DATETIME,
+    -- Внутренние
+    name VARCHAR(63), -- название чата
+    type ENUM("private", "group", "supergroup", "channel") NOT NULL, -- тип чата (приватный, группа, супергруппа, канал)
+    num_members INT, -- количество участников в чате
+    bot_is_kicked BOOLEAN -- удалили ли бота из чата
+);
+
 -- Таблица игр (во сколько началась игра и во сколько закончилась)
 CREATE TABLE Games (
     id INT AUTO_INCREMENT PRIMARY KEY, 
     created_at DATETIME,
+    -- Сторонние 
+    id_chat BIGINT
     -- Внутренние
     finished_at DATETIME NULL -- время конца игры
+
+    FOREIGN KEY (id_chat) REFERENCES Chats(id)
 );
 
 -- Таблица вопросос и действий - главная таблица, это и есть игры по сути
@@ -43,7 +58,7 @@ CREATE TABLE Questions_Actions (
     id_admin BIGINT,
     -- Внутренние
     question_or_action BOOLEAN, -- вопрос - 0, действие - 1
-    category VARCHAR(127), -- категория задания
+    category ENUM("Активность", "Философия", "Гипотетические ситуации", "Мечты и страхи", "Прошлое", "Юмор", "Пошлое", "Кринж") NOT NULL, -- категория задания
     question_action TEXT, -- текст вопроса или действия
 
     UNIQUE(question_action), -- текст должен быть уникальным, а иначе в чем смысл
@@ -56,9 +71,11 @@ CREATE TABLE Questions_Actions_From_Gamers (
     created_at DATETIME,
     -- Сторонние 
     id_gamer BIGINT, 
+    id_game INT,
     -- Внутренние
     question_action TEXT, -- текст вопроса или действия, тут они уже могут повторяться
 
+    FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
     FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
 );
 
@@ -78,8 +95,8 @@ CREATE TABLE Answers (
 
     FOREIGN KEY (id_game) REFERENCES Games(id),
     FOREIGN KEY (id_gamer) REFERENCES Gamers(id),
-    FOREIGN KEY (id_question_action) REFERENCES Questions_Actions(id),
-    FOREIGN KEY (id_question_action_from_gamer) REFERENCES Questions_Actions_From_Gamers(id)
+    FOREIGN KEY (id_question_action) REFERENCES Questions_Actions(id) ON DELETE SET NULL,
+    FOREIGN KEY (id_question_action_from_gamer) REFERENCES Questions_Actions_From_Gamers(id) ON DELETE SET NULL
 );
 
 -- Таблица с подключениями. Кто куда подлючился и когда отключился.
@@ -99,3 +116,4 @@ ALTER TABLE Questions_Actions CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_u
 ALTER TABLE Questions_Actions_From_Gamers CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE Gamers CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE Admins CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE Chats CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
