@@ -84,6 +84,7 @@ async def game_handler(message: Message, state: FSMContext):
     """Обработчик на команду game, т.е. на самое главное - начало игры
     """    
     await starting_choosing_participants_handler(message, state)
+    message.chat.mem
 
 
 async def starting_choosing_participants_handler(message_or_event, state: FSMContext):
@@ -95,11 +96,22 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
     await state.update_data(participants= {}) # Делаем список тех, кто будет участвовать в игре, не все ведь могут хотеть участвовать в чате
     await state.set_state(GameStates.choosing_participants)
 
-    # Отмечаем в базе, что игра началась
+
     async with async_session() as session:
+        # Проверяем существование чата в базе
+        chats = DataBase.Chats(session)
+        if not await chats.is_exists(message_or_event.chat.id):
+            chat = await chats.create(
+                id= message_or_event.chat.id, 
+                name= message_or_event.chat.full_name,
+                type= message_or_event.chat.get_members_count()
+                )
+            
+        # Отмечаем в базе, что игра началась
         games = DataBase.Games(session)
-        game = await games.create()
+        game = await games.create(id_chat= message_or_event.chat.id)
         await state.update_data(id_game= game.id)
+
 
 
 

@@ -31,37 +31,51 @@ logger.setLevel(logging.INFO)
 """Классы в виде представления классов SQL"""
 class Gamer(Base):
     __tablename__ = "Gamers"
+    # Базовые
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime)
+    # Внутренние
     username = Column(String(63), index=True)
 
 class Admin(Base):
     __tablename__ = "Admins"
+    # Базовые
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime)
+    # Внутренние
     username = Column(String(63), index=True)
 
 class Chat(Base):
     __tablename__ = "Chats"
+    # Базовые
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime)
+    # Внутренние
     name = Column(String)
     type = Column(Enum("private", "group", "supergroup", "channel"), nullable= False)
     num_members = Column(Integer)
-    bot_is_kicked = Column(Boolean)
-
+    bot_is_kicked = Column(Boolean, default= False)
 
 class Game(Base):
     __tablename__ = "Games"
+    # Базовые
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime)
-    finished_at= Column(DateTime, nullable=True)  # end_timing может быть пустым (nullable=True)
+    # Сторонние
+    id_chat = Column(Integer, ForeignKey("Chats.id"))
+    # Внутренние
+    finished_at= Column(DateTime, nullable=True) 
+
+    chat = relationship("Chat")
 
 class QuestionAction(Base):
     __tablename__ = "Questions_Actions"
+    # Базовые
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime)
-    id_admin = Column(Integer, ForeignKey('Admins.id'))
+    # Сторонние
+    id_admin = Column(Integer, ForeignKey('Admins.id', ondelete= "SET NULL"))
+    # Внутренние
     question_or_action = Column(Boolean)
     category = Column(Enum("Активность", "Философия", "Гипотетические ситуации", "Мечты и страхи", "Прошлое", "Юмор", "Пошлое", "Кринж"), nullable = False)
     question_action = Column(String, unique=True)
@@ -70,34 +84,40 @@ class QuestionAction(Base):
 
 class QuestionActionFromGamer(Base):
     __tablename__ = "Questions_Actions_From_Gamers"
+    # Базовые
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime)
+    # Сторонние
     id_gamer = Column(Integer, ForeignKey('Gamers.id'))
+    # Внутренние
     question_action = Column(String)
 
     gamer = relationship("Gamer")
 
 class Answer(Base):
     __tablename__ = "Answers"
+    # Базовые
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime)
-    id_game = Column(Integer, ForeignKey('Games.id'))
-    id_gamer = Column(Integer, ForeignKey('Gamers.id'))
-    id_question_action = Column(Integer, ForeignKey('Questions_Actions.id'), nullable=True)
-    id_question_action_from_gamer = Column(Integer, ForeignKey('Questions_Actions_From_Gamers.id'), nullable=True)
+    # Сторонние
+    id_paricipant = Column(Integer, ForeignKey('Participants.id'))
+    id_question_action = Column(Integer, ForeignKey('Questions_Actions.id', ondelete= "SET NULL"), nullable=True)
+    id_question_action_from_gamer = Column(Integer, ForeignKey('Questions_Actions_From_Gamers.id', ondelete= "SET NULL"), nullable=True)
+    # Внутренние
     round = Column(Integer)
     finished_at = Column(DateTime, nullable= True)
     score = Column(Integer, nullable= True)
 
-    game = relationship("Game")
-    gamer = relationship("Gamer")
+    participant = relationship("Participant")
     question_action = relationship("QuestionAction", foreign_keys=[id_question_action])
     question_action_from_gamer = relationship("QuestionActionFromGamer", foreign_keys=[id_question_action_from_gamer])
 
 class Participant(Base):
     __tablename__ = "Participants"
+    # Базовые
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime)
+    # Сторонние
     id_game = Column(Integer, ForeignKey('Games.id'))
     id_gamer = Column(Integer, ForeignKey('Gamers.id'))
 
@@ -260,6 +280,10 @@ class DataBase:
     class Admins(__Base):
         def __init__(self, session):
             super().__init__(session, Admin)
+
+    class Chats(__Base):
+        def __init__(self, session):
+            super().__init__(session, Chat) 
 
     class Games(__Base):
         def __init__(self, session):

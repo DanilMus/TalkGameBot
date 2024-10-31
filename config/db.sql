@@ -35,7 +35,7 @@ CREATE TABLE Chats (
     name VARCHAR(63), -- название чата
     type ENUM("private", "group", "supergroup", "channel") NOT NULL, -- тип чата (приватный, группа, супергруппа, канал)
     num_members INT, -- количество участников в чате
-    bot_is_kicked BOOLEAN -- удалили ли бота из чата
+    bot_is_kicked BOOLEAN DEFAULT FALSE-- удалили ли бота из чата
 );
 
 -- Таблица игр (во сколько началась игра и во сколько закончилась)
@@ -62,7 +62,7 @@ CREATE TABLE Questions_Actions (
     question_action TEXT, -- текст вопроса или действия
 
     UNIQUE(question_action), -- текст должен быть уникальным, а иначе в чем смысл
-    FOREIGN KEY (id_admin) REFERENCES Admins(id)
+    FOREIGN KEY (id_admin) REFERENCES Admins(id) ON DELETE SET NULL
 );
 
 -- Таблица для вопросов и действий от игроков, чтобы было веселеее и чтобы можно было брать идеи у них
@@ -84,8 +84,7 @@ CREATE TABLE Answers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     created_at DATETIME,
     -- Сторонние 
-    id_game INT,
-    id_gamer BIGINT,
+    id_participant BIGINT,
     id_question_action INT NULL, -- если есть, значит вопрос от системы, иначе вопрос от игрока
     id_question_action_from_gamer INT NULL, -- аналогично тому, что строчкой выше
     -- Внутренниезаносим, когда закончат)
@@ -93,8 +92,7 @@ CREATE TABLE Answers (
     finished_at DATETIME NULL, -- когда закончили
     score INT NULL, -- с каким счетом ответил
 
-    FOREIGN KEY (id_game) REFERENCES Games(id),
-    FOREIGN KEY (id_gamer) REFERENCES Gamers(id),
+    FOREIGN KEY (id_participant) REFERENCES Participants(id),
     FOREIGN KEY (id_question_action) REFERENCES Questions_Actions(id) ON DELETE SET NULL,
     FOREIGN KEY (id_question_action_from_gamer) REFERENCES Questions_Actions_From_Gamers(id) ON DELETE SET NULL
 );
