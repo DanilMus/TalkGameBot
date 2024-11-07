@@ -38,7 +38,7 @@ class AnswerOfWhosTurnFilter(BaseFilter):
             bool: от того ли получили сообщение, чья очередь
         """        
         data = await state.get_data()
-        return callback.from_user.username == data["whos_turn"]
+        return callback.from_user.username == data["paricipants"][data["whos_turn"]].gamer.username
 
 
 class AnswerOfOthersTurnFilter(BaseFilter):
@@ -55,7 +55,7 @@ class AnswerOfOthersTurnFilter(BaseFilter):
             bool: правда ли, что на колбэк ответил кто угодно, но не тот, чья очередь
         """        
         data = await state.get_data()
-        return callback.from_user.username != data["whos_turn"]
+        return callback.from_user.username != data["paricipants"][data["whos_turn"]].gamer.username
 
 
 
@@ -84,7 +84,7 @@ async def question_or_action_handler(callback: CallbackQuery, state: FSMContext)
     kb.button(text= "Действие", callback_data= GameCallbackFactory(step= "question_action", question_or_action= True))
 
     # Выдача сообщения для выбора вопроса или действия
-    await callback.message.answer(messages.take("question_or_action") % data["whos_turn"], reply_markup= kb.as_markup())
+    await callback.message.answer(messages.take("question_or_action") % data["paricipants"][data["whos_turn"]].gamer.username, reply_markup= kb.as_markup())
 
 
 @router.callback_query(GameStates.starting_round, GameCallbackFactory.filter(F.step == "question_action"), AnswerOfWhosTurnFilter())
@@ -98,8 +98,7 @@ async def question_action_handler(callback: CallbackQuery, callback_data: GameCa
     async with async_session() as session:
         answers = DataBase.Answers(session)
         answer = await answers.create(
-            id_game= data["id_game"],
-            id_gamer= callback.from_user.id,
+            id_participant= data["participants"][data["whos_turn"]].id,
             id_question_action= question_action.id,
             round= data["round"]
         )
@@ -109,7 +108,7 @@ async def question_action_handler(callback: CallbackQuery, callback_data: GameCa
     kb = InlineKeyboardBuilder()
     kb.button(text= "Закончил/а", callback_data= GameCallbackFactory(step= f"end_question_action", question_or_action= callback_data.question_or_action))
 
-    await callback.message.edit_text(messages.take(callback_data.step) % (data["whos_turn"], question_action.question_action), reply_markup= kb.as_markup())
+    await callback.message.edit_text(messages.take(callback_data.step) % (data["paricipants"][data["whos_turn"]].gamer.username, question_action.question_action), reply_markup= kb.as_markup())
 
 
 # Это уже по сути голосование, где другие игроки оценивают, как ответил тот, чья очередь
@@ -127,7 +126,7 @@ async def end_question_action_handler(callback: CallbackQuery, callback_data: Ga
     kb.button(text= "Да", callback_data= GameCallbackFactory(step= "no_yes_question_action", no_or_yes= True))
     kb.button(text= "Нет", callback_data= GameCallbackFactory(step= "no_yes_question_action", no_or_yes= False))
 
-    await callback.message.edit_text(messages.take(f"end_{("question", "action")[callback_data.question_or_action]}") % data["whos_turn"], reply_markup= kb.as_markup())
+    await callback.message.edit_text(messages.take(f"end_{("question", "action")[callback_data.question_or_action]}") % data["paricipants"][data["whos_turn"]].gamer.username, reply_markup= kb.as_markup())
     # Создаем пустой список, в котором будут те, кто ответил на Да и Нет
     data["others_turn"] = []
     await state.update_data(data)
@@ -140,7 +139,7 @@ async def no_yes_question_action_handler(callback: CallbackQuery, callback_data:
 
     data = await state.get_data()
     data["others_turn"].append(callback.from_user.username)
-    data["participants"][data["whos_turn"]] += callback_data.no_or_yes
+    data["participants"][data["whos_turn"]].score += callback_data.no_or_yes
     await state.set_data(data)
 
     # Если собрали все ответы, от всех игроков, кроме того, чья очередь
@@ -161,8 +160,7 @@ async def no_yes_question_action_handler(callback: CallbackQuery, callback_data:
             await question_or_action_handler(callback, state)
         except StopIteration: # если больше некого брать в итераторе
             if data["round"] + 1 <= data["rounds"]: # Если некому участвовать, то начинаем новый раунд
-                data["whos_turn_iter"] = iter(data["participants"])
-                data["whos_turn"] = next(data["whos_turn_iter"])
+                data["whos_turn"] += 1
                 data["round"] += 1
                 await state.set_data(data)
                 await starting_round_handler(callback, state)

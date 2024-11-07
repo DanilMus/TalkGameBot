@@ -93,7 +93,7 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
     await state.clear() # сбрасываение состояний
     
     await message_or_event.answer(messages.take("participants"), reply_markup= keyboard_voating_participants().as_markup())
-    await state.update_data(participants= {}) # Делаем список тех, кто будет участвовать в игре, не все ведь могут хотеть участвовать в чате
+    await state.update_data(participants= []) # Делаем список тех, кто будет участвовать в игре, не все ведь могут хотеть участвовать в чате
     await state.set_state(GameStates.choosing_participants)
 
 
@@ -106,11 +106,6 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
                 name= message_or_event.chat.full_name,
                 type= message_or_event.chat.get_members_count()
                 )
-            
-        # Отмечаем в базе, что игра началась
-        games = DataBase.Games(session)
-        game = await games.create(id_chat= message_or_event.chat.id)
-        await state.update_data(id_game= game.id)
 
 
 
@@ -121,20 +116,17 @@ async def choosing_participants_handler(callback: CallbackQuery, state: FSMConte
     """    
     data = await state.get_data()
     
-    if data["participants"].get(callback.from_user.username, True): # Проверяем, что человека нет в списке
-        data["participants"][callback.from_user.username] = 0 # Добавляем его в список и заносим, что он будет участвовать
-        await callback.message.answer(messages.take("new_participant") % callback.from_user.username)
-
+    async with async_session() as session:
+        # Проверяем существование игрока в базе
+        gamers = DataBase.Gamers(session)
+        gamer = await gamers.is_exists(callback.from_user.id)
+        if not gamer:
+            gamer = await gamers.create(id= callback.from_user.id, username= callback.from_user.username)
         
-        async with async_session() as session:
-            # Проверяем существование игрока в базе
-            gamers = DataBase.Gamers(session)
-            if not await gamers.is_exists(callback.from_user.id):
-                await gamers.create(id= callback.from_user.id, username= callback.from_user.username)
+        if gamer not in data["participants"]:
+            data["participants"].append(gamer)
+            await callback.message.answer(messages.take("new_participant") % callback.from_user.username) # Сообщаем о присоединении нового участника
 
-            # Отмечаем в базе подключение игрока к игре
-            participants = DataBase.Participants(session)
-            await participants.create(id_game= data["id_game"], id_gamer= callback.from_user.id)
 
 
 @router.callback_query(GameStates.choosing_participants, IsChatOwnerFilter(), GameCallbackFactory.filter(F.step == "ending_choosing"))
@@ -181,6 +173,8 @@ async def ending_choosing_participants_handler(callback: CallbackQuery, state: F
 async def choosing_rounds_handler(message: Message, state: FSMContext):
     """Обработчик на кол-во раундов, которое будет выбрано
     """    
+    await message.answer(message.take("preparing_game"))
+
     data = await state.get_data()
 
     # Если раундов отрицательное число, то сообщаем об этом
@@ -193,14 +187,25 @@ async def choosing_rounds_handler(message: Message, state: FSMContext):
         questions_actions = DataBase.Questions_Actions(session)
         data["questions_actions"] = await questions_actions.make_rounds(data["rounds"], len(data["participants"]))
 
+        # Отмечаем в базе, что игра началась
+        games = DataBase.Games(session)
+        game = await games.create(id_chat= message.chat.id, rounds= data["rounds"])
+
+        # Отмечаем в базе подключение игрока к игре
+        participants = DataBase.Participants(session)
+        for i in range(len(data["participants"])):
+            data["participants"][i] = await participants.create(
+                id_game= game.id, 
+                id_gamer= data["participants"][i].id
+                )
+
     # Подготовливаем данные для round.py
     await state.set_state(GameStates.starting_round)
-    data["whos_turn_iter"] = iter(data["participants"])
-    data["whos_turn"] = next(data["whos_turn_iter"])
+    data["whos_turn"] = 0
     data["round"] = 1
     await state.set_data(data)
 
     # Посылаем игроку информацию о готовности к игре
     kb = InlineKeyboardBuilder()
     kb.button(text= "Погнали!", callback_data= GameCallbackFactory(step= "starting_round"))
-    await message.answer(messages.take("starting_game"), reply_markup= kb.as_markup())
+    await message.edit_text(messages.take("starting_game"), reply_markup= kb.as_markup())

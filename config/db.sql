@@ -43,11 +43,26 @@ CREATE TABLE Games (
     id INT AUTO_INCREMENT PRIMARY KEY, 
     created_at DATETIME,
     -- Сторонние 
-    id_chat BIGINT
+    id_chat BIGINT,
     -- Внутренние
-    finished_at DATETIME NULL -- время конца игры
+    rounds INT,
+    finished_at DATETIME NULL, -- время конца игры
 
     FOREIGN KEY (id_chat) REFERENCES Chats(id)
+);
+
+-- Таблица с подключениями. Кто куда подлючился и когда отключился.
+CREATE TABLE Participants (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at DATETIME,
+    -- Сторонние 
+    id_game INT,
+    id_gamer BIGINT,
+    -- Внутренние
+    score INT DEFAULT 0,
+
+    FOREIGN KEY (id_game) REFERENCES Games(id),
+    FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
 );
 
 -- Таблица вопросос и действий - главная таблица, это и есть игры по сути
@@ -70,13 +85,11 @@ CREATE TABLE Questions_Actions_From_Gamers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     created_at DATETIME,
     -- Сторонние 
-    id_gamer BIGINT, 
-    id_game INT,
+    id_participant INT,
     -- Внутренние
     question_action TEXT, -- текст вопроса или действия, тут они уже могут повторяться
 
-    FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
-    FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
+    FOREIGN KEY (id_participant) REFERENCES Participants(id)
 );
 
 -- Таблица с ответами. Здесь хранится все знания о том, кто ответил, в какой игре, на какой вопрос, что получил за ответ
@@ -84,10 +97,10 @@ CREATE TABLE Answers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     created_at DATETIME,
     -- Сторонние 
-    id_participant BIGINT,
+    id_participant INT, -- айди участника
     id_question_action INT NULL, -- если есть, значит вопрос от системы, иначе вопрос от игрока
     id_question_action_from_gamer INT NULL, -- аналогично тому, что строчкой выше
-    -- Внутренниезаносим, когда закончат)
+    -- Внутренние
     round INT, -- в какой раунд
     finished_at DATETIME NULL, -- когда закончили
     score INT NULL, -- с каким счетом ответил
@@ -97,17 +110,6 @@ CREATE TABLE Answers (
     FOREIGN KEY (id_question_action_from_gamer) REFERENCES Questions_Actions_From_Gamers(id) ON DELETE SET NULL
 );
 
--- Таблица с подключениями. Кто куда подлючился и когда отключился.
-CREATE TABLE Participants (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    created_at DATETIME,
-    -- Сторонние 
-    id_game INT,
-    id_gamer BIGINT,
-
-    FOREIGN KEY (id_game) REFERENCES Games(id),
-    FOREIGN KEY (id_gamer) REFERENCES Gamers(id)
-);
 
 -- Решаем проблему с кодировками, чтобы можно было заносить русскими буквами
 ALTER TABLE Questions_Actions CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

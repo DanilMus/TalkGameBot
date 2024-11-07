@@ -64,9 +64,24 @@ class Game(Base):
     # Сторонние
     id_chat = Column(Integer, ForeignKey("Chats.id"))
     # Внутренние
+    rounds = Column(Integer)
     finished_at= Column(DateTime, nullable=True) 
 
     chat = relationship("Chat")
+
+class Participant(Base):
+    __tablename__ = "Participants"
+    # Базовые
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime)
+    # Сторонние
+    id_game = Column(Integer, ForeignKey('Games.id'))
+    id_gamer = Column(Integer, ForeignKey('Gamers.id'))
+    # Внутренние 
+    score = Column(Integer, default= 0)
+
+    game = relationship("Game")
+    gamer = relationship("Gamer")
 
 class QuestionAction(Base):
     __tablename__ = "Questions_Actions"
@@ -112,17 +127,6 @@ class Answer(Base):
     question_action = relationship("QuestionAction", foreign_keys=[id_question_action])
     question_action_from_gamer = relationship("QuestionActionFromGamer", foreign_keys=[id_question_action_from_gamer])
 
-class Participant(Base):
-    __tablename__ = "Participants"
-    # Базовые
-    id = Column(Integer, primary_key=True, index=True)
-    created_at = Column(DateTime)
-    # Сторонние
-    id_game = Column(Integer, ForeignKey('Games.id'))
-    id_gamer = Column(Integer, ForeignKey('Gamers.id'))
-
-    game = relationship("Game")
-    gamer = relationship("Gamer")
 
 
 """Главный класс для взаимодействия с базой"""

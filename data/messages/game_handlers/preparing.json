@@ -8,5 +8,6 @@
     "problem_with_rounds_int": ["Я не смогу провести раундов меньше чем 1 и больше чем %s"],
     "problem_with_participants": ["Игроков должно быть не меньше 2 для участия"],
     "starting_game": ["Я все подготовил. Жду вас..."],
-    "new_participant": ["@%s присоединился к игре"]
+    "new_participant": ["@%s присоединился к игре"],
+    "preparing_game": ["Готовлю игру..."]
 }
