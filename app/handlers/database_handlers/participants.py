@@ -11,7 +11,7 @@ import logging
 
 # свои модули
 from app.callbacks_factories import DatabaseCallbackFactory
-from app.handlers.database_handlers.database_handlers_base import DatabaseHandlersBase
+from app.handlers.database_handlers.base import DatabaseHandlersBase
 
 
 

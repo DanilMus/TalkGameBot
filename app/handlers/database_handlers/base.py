@@ -1,6 +1,5 @@
 """ | Файл с классом обработчиков для БД | """
 
-
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -12,18 +11,23 @@ from app.database import DataBase, async_session
 from app.messages import Messages
 from app.callbacks_factories import DatabaseCallbackFactory
 
-# Переменные для оргиназации работы
+"""Переменные для оргиназации работы"""
 logger = logging.getLogger(__name__) # логирование событий
 
+
 class DatabaseHandlersBase:
-    def __init__(self, for_file):
+    """Класс - база для всех хэндлеров, которые обрабатывают взаимодействие с базой
+    """    
+    def __init__(self, for_file: str, Model: DataBase):
         self.messages = Messages(for_file)
 
-        filename = os.path.basename(for_file)
-        model_name = "_".join([el.capitalize() for el in os.path.splitext(filename)[0].split("_")])
-        self.Model = getattr(DataBase, model_name)
+        self.Model = Model
 
-        self.table_name = model_name 
+        # filename = os.path.basename(for_file)
+        # model_name = "_".join([el.capitalize() for el in os.path.splitext(filename)[0].split("_")])
+        # self.Model = getattr(DataBase, model_name)
+
+        # self.table_name = model_name 
         
     
     #

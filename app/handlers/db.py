@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Awaitable
 from app.messages import Messages
 from app.database import DataBase, async_session
 from app.callbacks_factories import DatabaseCallbackFactory
-from app.handlers.database_handlers import admins, answers, gamers, games, participants, questions_actions, questions_actions_from_gamers
+from app.handlers.database_handlers import admins, gamers, chats, questions_actions, questions_actions_from_gamers, games, participants, answers
 from config.config_reader import config
 
 
@@ -75,18 +75,19 @@ def kb_for_db_handler() -> InlineKeyboardBuilder:
     kb = InlineKeyboardBuilder()
 
     # 1 строка
-    kb.button(text= "Игроки", callback_data= DatabaseCallbackFactory(table= "Gamers", action= "start"))
-    kb.button(text= "Админы", callback_data= DatabaseCallbackFactory(table= "Admins", action= "start"))
-    kb.button(text= "Игры", callback_data= DatabaseCallbackFactory(table= "Games", action= "start"))
+    kb.button(text= "Игроки", callback_data= DatabaseCallbackFactory(table= DataBase.Gamers, action= "start"))
+    kb.button(text= "Админы", callback_data= DatabaseCallbackFactory(table= DataBase.Admins, action= "start"))
+    kb.button(text= "Чаты", callback_data= DatabaseCallbackFactory(table= DataBase.Chats, action= "start"))
     # 2 строка
-    kb.button(text= "Вопросы и Действия", callback_data= DatabaseCallbackFactory(table= "Questions_Actions", action= "start"))
+    kb.button(text= "Вопросы и Действия", callback_data= DatabaseCallbackFactory(table= DataBase.Questions_Actions, action= "start"))
     # 3 строка
-    kb.button(text= "Вопросы и Действия от игроков", callback_data= DatabaseCallbackFactory(table= "Questions_Actions_From_Gamers", action= "start"))
+    kb.button(text= "Вопросы и Действия от игроков", callback_data= DatabaseCallbackFactory(table= DataBase.Questions_Actions_From_Gamers, action= "start"))
     # 4 строка
-    kb.button(text= "Ответы", callback_data= DatabaseCallbackFactory(table= "Answers", action= "start"))
-    kb.button(text= "Участники", callback_data= DatabaseCallbackFactory(table= "Participants", action= "start"))
+    kb.button(text= "Игры", callback_data= DatabaseCallbackFactory(table= DataBase.Games, action= "start"))
+    kb.button(text= "Участники", callback_data= DatabaseCallbackFactory(table= DataBase.Participants, action= "start"))
+    kb.button(text= "Ответы", callback_data= DatabaseCallbackFactory(table= DataBase.Answers, action= "start"))
     # Отмечаем строки
-    kb.adjust(3, 1, 1, 2)
+    kb.adjust(3, 1, 1, 3)
     return kb
 
 
@@ -117,10 +118,11 @@ async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbac
 """Подключение роутеров с обработчиками таблиц базы"""
 router.include_routers(
     gamers.router,
-    games.router,
+    admins.router,
+    chats.router,
     questions_actions.router,
     questions_actions_from_gamers.router,
+    games.router,
     answers.router,
     participants.router,
-    admins.router,
 )

@@ -84,8 +84,7 @@ async def game_handler(message: Message, state: FSMContext):
     """Обработчик на команду game, т.е. на самое главное - начало игры
     """    
     await starting_choosing_participants_handler(message, state)
-    message.chat.mem
-
+    
 
 async def starting_choosing_participants_handler(message_or_event, state: FSMContext):
     """По сути продолжение двух функций game_handler, чтобы не дублировать в каждом из них все
@@ -104,7 +103,8 @@ async def starting_choosing_participants_handler(message_or_event, state: FSMCon
             chat = await chats.create(
                 id= message_or_event.chat.id, 
                 name= message_or_event.chat.full_name,
-                type= message_or_event.chat.get_members_count()
+                type= message_or_event.chat.type,
+                num_members= await message_or_event.chat.get_member_count()
                 )
 
 
