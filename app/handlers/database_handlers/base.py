@@ -1,12 +1,14 @@
 """ | Файл с классом обработчиков для БД | """
 
 from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import logging
 import os
 
 # Cвои модули
+from app.states import AdminsStates
 from app.database import DataBase, async_session
 from app.messages import Messages
 from app.callbacks_factories import DatabaseCallbackFactory
@@ -21,18 +23,18 @@ class DatabaseHandlersBase:
     def __init__(self, for_file: str, Model: DataBase):
         self.messages = Messages(for_file)
 
-        self.Model = Model
-
-        # filename = os.path.basename(for_file)
-        # model_name = "_".join([el.capitalize() for el in os.path.splitext(filename)[0].split("_")])
-        # self.Model = getattr(DataBase, model_name)
-
-        # self.table_name = model_name 
+        filename = os.path.basename(for_file)
+        model_name = "_".join([el.capitalize() for el in os.path.splitext(filename)[0].split("_")])
+        self.Model = getattr(DataBase, model_name)
         
     
     #
     # | Create | 
     #
+    async def prepare_create_handler(self, callback: CallbackQuery, state: FSMContext):
+        await callback.message.answer(self.messages.take("example"))
+        await state.set_state(AdminsStates.choosing_create)
+
     async def create_handler(self, message: Message, **kwargs):
         async with async_session() as session:
             table_db = self.Model(session)

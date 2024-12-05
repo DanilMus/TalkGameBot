@@ -3,3 +3,4 @@ venv/
 config.env
 alembic/
 alembic.ini
+test.py

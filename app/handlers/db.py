@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Awaitable
 from app.messages import Messages
 from app.database import DataBase, async_session
 from app.callbacks_factories import DatabaseCallbackFactory
-from app.handlers.database_handlers import admins, gamers, chats, questions_actions, questions_actions_from_gamers, games, participants, answers
+from app.handlers.database_handlers import database_handlers #, admins, gamers, chats, questions_actions, questions_actions_from_gamers, games, participants, answers
 from config.config_reader import config
 
 
@@ -92,37 +92,15 @@ def kb_for_db_handler() -> InlineKeyboardBuilder:
 
 
 
-# Обработчик для предоставления команд на взаимодействие с таблицами
-@router.callback_query(DatabaseCallbackFactory.filter(F.action == "start"))
-async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory, state: FSMContext):
-    await state.clear()
-    table = callback_data.table
-
-    kb = InlineKeyboardBuilder()
-    if table == "Admins" or table == "Questions_Actions": # Только у этих таблиц есть возможность редактирования
-        kb.button(text= "Добавить", callback_data= DatabaseCallbackFactory(table= table, action= "create"))
-        kb.button(text= "Прочитать", callback_data= DatabaseCallbackFactory(table= table, action= "read"))
-        kb.button(text= "Обновить", callback_data= DatabaseCallbackFactory(table= table, action= "update"))
-        kb.button(text= "Удалить", callback_data= DatabaseCallbackFactory(table= table, action= "delete"))
-        kb.button(text= "Назад", callback_data= DatabaseCallbackFactory(table= "all", action= "begin"))
-        kb.adjust(4)
-    else:
-        kb.button(text= "Прочитать", callback_data= DatabaseCallbackFactory(table= table, action= "read"))
-        kb.button(text= "Назад", callback_data= DatabaseCallbackFactory(table= "all", action= "begin"))
-
-    
-    await callback.message.edit_text(messages.take("what_action") % table, reply_markup= kb.as_markup())
-
-
-
 """Подключение роутеров с обработчиками таблиц базы"""
-router.include_routers(
-    gamers.router,
-    admins.router,
-    chats.router,
-    questions_actions.router,
-    questions_actions_from_gamers.router,
-    games.router,
-    answers.router,
-    participants.router,
-)
+# router.include_routers(
+#     gamers.router,
+#     admins.router,
+#     chats.router,
+#     questions_actions.router,
+#     questions_actions_from_gamers.router,
+#     games.router,
+#     answers.router,
+#     participants.router,
+# )
+router.include_router(database_handlers.router)
