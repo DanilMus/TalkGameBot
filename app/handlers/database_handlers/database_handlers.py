@@ -31,7 +31,7 @@ async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbac
     """Обработчик для предоставления команд на взаимодействие с таблицами
     """    
     await state.clear()
-    table = callback_data.table
+    table = callback_data.get_table_class()
     handlers_base = DatabaseHandlersBase(__file__.replace(f"{table.__name__}"))
 
     kb = InlineKeyboardBuilder()

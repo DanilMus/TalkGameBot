@@ -276,7 +276,6 @@ class DataBase:
                 return 0
 
 
-
     class Gamers(__Base):
         def __init__(self, session):
             super().__init__(session, Gamer)
