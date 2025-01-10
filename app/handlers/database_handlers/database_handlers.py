@@ -32,7 +32,7 @@ async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbac
     """    
     await state.clear()
     table = callback_data.get_table_class()
-    handlers_base = DatabaseHandlersBase(__file__.replace(f"{table.__name__}"))
+    handlers_base = DatabaseHandlersBase(__file__.replace("database_handlers.py", f"{table.__name__}"))
 
     kb = InlineKeyboardBuilder()
     if table is DataBase.Admins or table == DataBase.Questions_Actions: # Только у этих таблиц есть возможность редактирования
