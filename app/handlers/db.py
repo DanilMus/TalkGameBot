@@ -64,7 +64,7 @@ async def db_handler(message: Message, state: FSMContext):
 
 
 # Обработчик при нажатии кнопки "Назад"
-@router.callback_query(DatabaseCallbackFactory.filter(F.table == "all" and F.action == "begin"))
+@router.callback_query(DatabaseCallbackFactory.filter(F.action == "begin"))
 async def db_handler2(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(messages.take("what_table"), reply_markup= kb_for_db_handler().as_markup())
