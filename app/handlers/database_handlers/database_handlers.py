@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, Awaitable
 # Свои модули
 from app.messages import Messages
 from app.callbacks_factories import DatabaseCallbackFactory
-from app.states import AdminsStates
+from app.states import DatabaseStates
 from app.database import DataBase
 from app.handlers.database_handlers.base import DatabaseHandlersBase
 
@@ -58,14 +58,16 @@ async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbac
 async def prepare_create_handler(callback: CallbackQuery, state: FSMContext):
     """Обработчик для подготовки к добавлению в таблицу
     """    
-    handlers_base = await state.get_data("handlers_base")
+    data = await state.get_data()
+    handlers_base = data["handlers_base"]
     await handlers_base.prepare_create_handler(callback, state)
 
-@router.message(AdminsStates.choosing_create)
+@router.message(DatabaseStates.choosing_create)
 async def create_handler(message: Message, state: FSMContext):
     """Обработчик на добавление в таблицу
     """    
-    handlers_base = await state.get_data("handlers_base")
+    data = await state.get_data()
+    handlers_base = data["handlers_base"]
     match handlers_base.Model:
         case DataBase.Admins:
             id, username = message.text.split()
@@ -75,8 +77,47 @@ async def create_handler(message: Message, state: FSMContext):
 """| Read |"""
 @router.callback_query(DatabaseCallbackFactory.filter(F.action == "read"))
 async def read_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory, state: FSMContext):
-    """Обработчик на чтение Admins
+    """Обработчик на чтение таблицы
     """    
     data = await state.get_data()
     handlers_base = data["handlers_base"]
     await handlers_base.read_hadler(callback, callback_data)
+
+
+"""| Update |"""
+@router.callback_query(DatabaseCallbackFactory.filter(F.action == "update"))
+async def prepare_update_handler(callback: CallbackQuery, state: FSMContext):
+    """Обработчик на подготовку к обновление таблицы
+    """    
+    data = await state.get_data()
+    handlers_base = data["handlers_base"]
+    await handlers_base.prepare_update_handler(callback, state)
+
+@router.message(DatabaseStates.choosing_update)
+async def update_handler(message: Message, state: FSMContext):
+    """Обработчик на обновление таблицы
+    """
+    data = await state.get_data()
+    handlers_base = data["handlers_base"]
+    match handlers_base.Model:
+        case DataBase.Admins:
+            id, username = message.text.split()
+            await handlers_base.update_handler(message, id= id, username= username)
+
+
+"""| Delete |"""
+@router.callback_query(DatabaseCallbackFactory.filter(F.action == "delete"))
+async def prepare_delete_handler(callback: CallbackQuery, state: FSMContext):
+    """Обработчик для подготовки к удалению
+    """    
+    data = await state.get_data()
+    handlers_base = data["handlers_base"]
+    await handlers_base.prepare_delete_handler(callback, state)
+
+@router.message(DatabaseStates.choosing_delete)
+async def delete_handler(message: Message, state: FSMContext):
+    """Обработчик на удаление
+    """    
+    data = await state.get_data()
+    handlers_base = data["handlers_base"]
+    await handlers_base.delete_handler(message)
