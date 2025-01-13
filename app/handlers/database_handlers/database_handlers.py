@@ -3,6 +3,7 @@
 
 from aiogram import F, Router, BaseMiddleware
 from aiogram.types import Message, CallbackQuery, TelegramObject
+from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -25,8 +26,30 @@ router = Router() # маршрутизатор
 messages = Messages(__file__)
 
 
+"""Фильтры"""
+class IsCreatorFilter(BaseFilter):
+    """Фильтр на проверку прав доступа главного админа
+    """    
+    async def __call__(self, callback: CallbackQuery, callback_data: DatabaseCallbackFactory):
+        """Сам фильтр
+
+        Args:
+            callback (CallbackQuery): вызывает только из колбэков
+            callback_data (DatabaseCallbackFactory): передаем данные о таблице, для этого нужен
+
+        Returns:
+            bool: правда ли, что если это (не таблица Админов) или (таблица Админов и пользователь - глав админ)
+        """        
+        if not(callback_data.get_table_class() is not DataBase.Admins or 
+            callback_data.get_table_class() is DataBase.Admins and 
+            callback.from_user.id == config.id_owner.get_secret_value()):
+            callback.answer(messages.take("no_rules"))
+            return False
+        return True
+
+
 """Хэндлеры"""
-@router.callback_query(DatabaseCallbackFactory.filter(F.action == "start"))
+@router.callback_query(DatabaseCallbackFactory.filter(F.action == "start"), IsCreatorFilter())
 async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbackFactory, state: FSMContext):
     """Обработчик для предоставления команд на взаимодействие с таблицами
     """    
