@@ -1,0 +1,3 @@
+{
+    "read": ["<code>%s</code>: %s  name: %s type %s num_members: %s bot_is_kicked: %s\n"]
+}
