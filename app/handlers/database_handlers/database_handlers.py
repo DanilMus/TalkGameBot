@@ -1,14 +1,13 @@
 """| CRUD на все таблицы |"""
 
 
-from aiogram import F, Router, BaseMiddleware
-from aiogram.types import Message, CallbackQuery, TelegramObject
+from aiogram import F, Router
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import logging
-from typing import Any, Callable, Dict, Awaitable
 
 # Свои модули
 from app.messages import Messages
@@ -63,13 +62,11 @@ async def admins_handler(callback: CallbackQuery, callback_data: DatabaseCallbac
         )
 
     kb = InlineKeyboardBuilder()
+    kb.button(text= "Прочитать", callback_data= DatabaseCallbackFactory(table= table, action= "read"))
     if table is DataBase.Admins or table is DataBase.Questions_Actions: # Только у этих таблиц есть возможность редактирования
         kb.button(text= "Добавить", callback_data= DatabaseCallbackFactory(table= table, action= "create"))
-        kb.button(text= "Прочитать", callback_data= DatabaseCallbackFactory(table= table, action= "read"))
         kb.button(text= "Обновить", callback_data= DatabaseCallbackFactory(table= table, action= "update"))
         kb.button(text= "Удалить", callback_data= DatabaseCallbackFactory(table= table, action= "delete"))
-    else:
-        kb.button(text= "Прочитать", callback_data= DatabaseCallbackFactory(table= table, action= "read"))
     kb.button(text= "Назад", callback_data= DatabaseCallbackFactory(action= "begin"))
     kb.adjust(4, 1)
 
@@ -95,6 +92,11 @@ async def create_handler(message: Message, state: FSMContext):
         case DataBase.Admins:
             id, username = message.text.split()
             await handlers_base.create_handler(message, id= id, username= username)
+        case DataBase.Questions_Actions:
+            id_admin = message.from_user.id
+            question_or_action, category, question_action = message.split("_")
+            question_or_action = bool(int(question_or_action))
+            await handlers_base.create_handler(message, id_admin= id_admin, question_or_action= question_or_action, category= category, question_action= question_action)
 
 
 """| Read |"""
@@ -126,6 +128,12 @@ async def update_handler(message: Message, state: FSMContext):
         case DataBase.Admins:
             id, username = message.text.split()
             await handlers_base.update_handler(message, id= id, username= username)
+        case DataBase.Questions_Actions:
+            id_admin = message.from_user.id
+            id, question_or_action, category, question_action = message.split("_")
+            id, question_or_action = int(id), bool(int(question_or_action))
+
+            await handlers_base.create_handler(message, id= id, id_admin= id_admin, question_or_action= question_or_action, category= category, question_action= question_action)
 
 
 """| Delete |"""

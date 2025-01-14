@@ -2,7 +2,7 @@
     "example": ["Укажи ID и username.\nПример: 1 Ivan"],
     "example_to_update": ["Укажи ID и username, измененный.\nПример: 1 Ivan"],
     "created": ["Админ успешно добавлен"],
-    "read": ["<code>%s</code>:\t%s\t@%s"],
+    "read": ["<code>%s</code>:%s @%s"],
     "updated": ["Админ успешно изменен"],
     "deleted": ["Админ успешно удален"]
 }
