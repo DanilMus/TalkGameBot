@@ -1,3 +1,3 @@
 {
-    "read": ["<code>%s</code>: %s  ID_game: <code>%s</code>  ID_gamer: <code>%s</code>\n"]
+    "read": ["<code>%s</code>: %s  id_game: <code>%s</code>  id_gamer: <code>%s</code> score: %s\n"]
 }
