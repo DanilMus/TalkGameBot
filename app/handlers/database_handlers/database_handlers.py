@@ -94,7 +94,7 @@ async def create_handler(message: Message, state: FSMContext):
             await handlers_base.create_handler(message, id= id, username= username)
         case DataBase.Questions_Actions:
             id_admin = message.from_user.id
-            question_or_action, category, question_action = message.split("_")
+            question_or_action, category, question_action = message.text.split("_")
             question_or_action = bool(int(question_or_action))
             await handlers_base.create_handler(message, id_admin= id_admin, question_or_action= question_or_action, category= category, question_action= question_action)
 
